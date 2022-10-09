@@ -1068,7 +1068,16 @@ std::string DSForLayers::get_label(int pos, LabelType label_type, const std::str
         return str;
     if (label_type == ltHeightWithLayer) {
         size_t layer_number = m_ticks.is_wipe_tower ? get_layer_number(value, label_type) + 1 : (m_values.empty() ? value : value + 1);
-        return format("%1%\n(%2%)", str, layer_number);
+        double layer_height = m_values.empty() ? 0 : m_values[layer_number - 1] - (layer_number > 1 ? m_values[layer_number - 2] : 0);
+        
+        std::string time_so_far = value < m_layers_times.size() ? short_and_splitted_time(get_time_dhm(m_layers_times[value])) : "";
+        if (time_so_far.size() >= 2)
+            time_so_far.resize(time_so_far.size() - 2);
+
+        return format("%1%\n(%2%)\n%3$.2f\n%4%\n%5%", str, layer_number,
+                        layer_height,
+                        value < m_layers_times.size() ? short_and_splitted_time(get_time_dhms(m_layers_times[value] - (value > 0 ? m_layers_times[value - 1] : 0))) : "",
+                        time_so_far);
     }    
 
     return "";
