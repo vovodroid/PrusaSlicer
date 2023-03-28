@@ -147,6 +147,7 @@ static const t_config_enum_values s_keys_map_InfillPattern {
     { "adaptivecubic",      ipAdaptiveCubic },
     { "supportcubic",       ipSupportCubic },
     { "lightning",          ipLightning },
+    { "ensuring",           ipEnsuring },
     { "zigzag",             ipZigZag }
 };
 CONFIG_OPTION_ENUM_DEFINE_STATIC_MAPS(InfillPattern)
@@ -966,17 +967,31 @@ void PrintConfigDef::init_fff_params()
     });
 
     // solid_fill_pattern is an obsolete equivalent to top_fill_pattern/bottom_fill_pattern.
-    def->aliases = { "solid_fill_pattern", "external_fill_pattern" };
+    def->aliases = { "external_fill_pattern" };
     def->set_default_value(new ConfigOptionEnum<InfillPattern>(ipMonotonic));
 
     def = this->add("bottom_fill_pattern", coEnum);
     def->label = L("Bottom fill pattern");
     def->category = L("Infill");
     def->tooltip = L("Fill pattern for bottom infill. This only affects the bottom external visible layer, and not its adjacent solid shells.");
-    def->cli = "bottom-fill-pattern|external-fill-pattern|solid-fill-pattern";
+    def->cli = "bottom-fill-pattern|external-fill-pattern";
     def->enum_def = Slic3r::clonable_ptr<Slic3r::ConfigOptionEnumDef>(def_top_fill_pattern->enum_def->clone());
     def->aliases = def_top_fill_pattern->aliases;
     def->set_default_value(new ConfigOptionEnum<InfillPattern>(ipMonotonic));
+
+    def = this->add("solid_fill_pattern", coEnum);
+    def->label = L("Solid fill pattern");
+    def->category = L("Infill");
+    def->tooltip = L("Fill pattern for solid infill. This only affects the invisible top/bottom adjacent solid shells.");
+    def->cli = "solid-fill-pattern";
+    def->set_enum<InfillPattern>({
+        { "ensuring",           L("Ensuring") },
+        { "concentric",         L("Concentric") },
+        { "rectilinear",        L("Rectilinear") },
+        { "alignedrectilinear", L("Aligned Rectilinear") },
+        { "monotonic",          L("Monotonic") },
+    });
+    def->set_default_value(new ConfigOptionEnum<InfillPattern>(ipEnsuring));
 
     def = this->add("external_perimeter_extrusion_width", coFloatOrPercent);
     def->label = L("External perimeters");
