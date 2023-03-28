@@ -1,6 +1,12 @@
 
 ![PrusaSlicer logo](/resources/icons/PrusaSlicer.png?raw=true)
 
+
+My fork based and updated on upstream branch. I keep it as close to origin code as possible, without any refactoring to allow further updates.
+
+It currently contains following [PRs](https://github.com/prusa3d/PrusaSlicer/pulls/vovodroid)  and some other additions (see commits).
+
+
 # PrusaSlicer
 
 You may want to check the [PrusaSlicer project page](https://www.prusa3d.com/prusaslicer/).
