@@ -242,6 +242,7 @@ void ConfigManipulation::toggle_print_fff_options(DynamicPrintConfig* config)
     bool has_solid_infill 		 = has_top_solid_infill || has_bottom_solid_infill;
     // solid_infill_extruder uses the same logic as in Print::extruders()
     for (auto el : { "top_fill_pattern", "bottom_fill_pattern", "infill_first", "solid_infill_extruder",
+                    "solid_fill_pattern",
                     "solid_infill_extrusion_width", "solid_infill_speed" })
         toggle_field(el, has_solid_infill);
 
