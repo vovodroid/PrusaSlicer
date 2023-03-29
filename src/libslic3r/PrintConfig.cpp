@@ -657,6 +657,33 @@ void PrintConfigDef::init_fff_params()
     def->mode = comExpert;
     def->set_default_value(new ConfigOptionBool(false));
 
+    def = this->add("first_layer_solid_flow_ratio", coFloat);
+    def->label = L("First layer soild infill flow ratio");
+    def->category = L("Advanced");
+    def->tooltip = L("This factor affects the amount of plastic for first layer soild infill. Play with this parameter to get smooth first layer.");
+    def->min = 0.5;
+    def->max = 1.5;
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionFloat(1));
+
+    def = this->add("top_layer_flow_ratio", coFloat);
+    def->label = L("Top layer flow ratio");
+    def->category = L("Advanced");
+    def->tooltip = L("This factor affects the amount of plastic for top layer. Play with this parameter to get smooth surface.");
+    def->min = 0.5;
+    def->max = 1.5;
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionFloat(1));
+
+    def = this->add("solid_infill_flow_ratio", coFloat);
+    def->label = L("Solid infill flow ratio");
+    def->category = L("Advanced");
+    def->tooltip = L("This factor affects the amount of plastic for solid infill layer. Play with this parameter to get smooth solid infill.");
+    def->min = 0.5;
+    def->max = 1.5;
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionFloat(1));
+
     def = this->add("bridge_speed", coFloat);
     def->label = L("Bridges");
     def->category = L("Speed");

@@ -700,6 +700,8 @@ PRINT_CONFIG_CLASS_DEFINE(
     ((ConfigOptionFloatOrPercent,       solid_infill_extrusion_width))
     ((ConfigOptionInt,                  solid_infill_every_layers))
     ((ConfigOptionFloatOrPercent,       solid_infill_speed))
+    ((ConfigOptionFloat,                solid_infill_flow_ratio))
+    ((ConfigOptionFloat,                top_layer_flow_ratio))
     // Detect thin walls.
     ((ConfigOptionBool,                 thin_walls))
     ((ConfigOptionFloatOrPercent,       top_infill_extrusion_width))
@@ -882,6 +884,7 @@ PRINT_CONFIG_CLASS_DERIVED_DEFINE(
     ((ConfigOptionFloat,              first_layer_acceleration))
     ((ConfigOptionInts,               first_layer_bed_temperature))
     ((ConfigOptionFloatOrPercent,     first_layer_extrusion_width))
+    ((ConfigOptionFloat,              first_layer_solid_flow_ratio))
     ((ConfigOptionFloatOrPercent,     first_layer_height))
     ((ConfigOptionFloatOrPercent,     first_layer_speed))
     ((ConfigOptionInts,               first_layer_temperature))
