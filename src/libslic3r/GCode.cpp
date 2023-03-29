@@ -3215,7 +3215,15 @@ std::string GCodeGenerator::_extrude(
     }
 
     // calculate extrusion length per distance unit
-    double e_per_mm = m_writer.extruder()->e_per_mm3() * path_attr.mm3_per_mm;
+    float flow_ratio = 1;
+    if (this->on_first_layer() && path_attr.role.is_solid_infill())
+        flow_ratio = m_config.first_layer_solid_flow_ratio;
+    else if (path_attr.role == ExtrusionRole::TopSolidInfill)
+        flow_ratio = m_config.top_layer_flow_ratio;
+    else if (path_attr.role.is_solid_infill())
+        flow_ratio = m_config.solid_infill_flow_ratio;
+
+    double e_per_mm = m_writer.extruder()->e_per_mm3() * path_attr.mm3_per_mm * flow_ratio;
     if (m_writer.extrusion_axis().empty())
         // gcfNoExtrusion
         e_per_mm = 0;
@@ -3302,7 +3310,7 @@ std::string GCodeGenerator::_extrude(
 
     if (last_was_wipe_tower || m_last_width != path_attr.width) {
         m_last_width = path_attr.width;
-        gcode += std::string(";") + GCodeProcessor::reserved_tag(GCodeProcessor::ETags::Width)
+        gcode += std::string(";_") + GCodeProcessor::reserved_tag(GCodeProcessor::ETags::Width)
                + float_to_string_decimal_point(m_last_width) + "\n";
     }
 

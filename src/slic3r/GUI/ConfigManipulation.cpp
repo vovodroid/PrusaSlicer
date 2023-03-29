@@ -244,6 +244,7 @@ void ConfigManipulation::toggle_print_fff_options(DynamicPrintConfig* config)
     for (auto el : { "top_fill_pattern", "bottom_fill_pattern", "infill_first", "solid_infill_extruder",
                     "solid_fill_pattern",
                     "solid_infill_extrusion_width", "solid_infill_speed" })
+                    "solid_infill_flow_ratio", "top_layer_flow_ratio",
         toggle_field(el, has_solid_infill);
 
     for (auto el : { "fill_angle", "bridge_angle", "infill_extrusion_width",
