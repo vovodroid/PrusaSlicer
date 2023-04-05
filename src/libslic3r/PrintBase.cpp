@@ -2,6 +2,8 @@
 ///|/
 ///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
 ///|/
+#include <codecvt>
+
 #include "Exception.hpp"
 #include "PrintBase.hpp"
 
@@ -12,6 +14,37 @@
 
 namespace Slic3r
 {
+std::map<wchar_t, std::string> transt = {
+{ L'А', "A" }, { L'а', "a" }, { L'Б', "B" }, { L'б', "b" }, { L'В', "V"  }, { L'в', "v"  },
+{ L'Г', "G" }, { L'г', "g" }, { L'Д', "D" }, { L'д', "d" }, { L'Е', "E"  }, { L'е', "e"  },
+{ L'Ё', "Yo"}, { L'ё', "yo"}, { L'Ж', "Zh"}, { L'ж', "zh"}, { L'З', "Z"  }, { L'з', "z"  },
+{ L'И', "I" }, { L'и', "i" }, { L'Й', "Y" }, { L'й', "y" }, { L'К', "K"  }, { L'к', "k"  },
+{ L'Л', "L" }, { L'л', "l" }, { L'М', "M" }, { L'м', "m" }, { L'Н', "N"  }, { L'н', "n"  },
+{ L'О', "O" }, { L'о', "o" }, { L'П', "P" }, { L'п', "p" }, { L'Р', "R"  }, { L'р', "r"  },
+{ L'С', "S" }, { L'с', "s" }, { L'Т', "T" }, { L'т', "t" }, { L'У', "U"  }, { L'у', "u"  },
+{ L'Ф', "F" }, { L'ф', "f" }, { L'Х', "Kh"}, { L'х', "kh"}, { L'Ц', "Ts" }, { L'ц', "ts" },
+{ L'Ч', "Ch"}, { L'ч', "ch"}, { L'Ш', "Sh"}, { L'ш', "sh"}, { L'Щ', "Sch"}, { L'щ', "sch"},
+{ L'Ъ', "'" }, { L'ъ', "'" }, { L'Ы', "Y" }, { L'ы', "y" }, { L'Ь', "'"  }, { L'ь', "'"  },
+{ L'Э', "E" }, { L'э', "e" }, { L'Ю', "Yu"}, { L'ю', "yu"}, { L'Я', "Ya" }, { L'я', "ya" }
+};
+
+std::string transliterate(const std::string& input)
+{
+    std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
+    std::string output;
+
+    for (wchar_t c : converter.from_bytes(input)) {
+        auto it = transt.find(c);
+        if (it != transt.end()) {
+            output += it->second;
+        }
+        else {
+            output += c;
+        }
+    }
+
+    return (output.length() <= 13) ? output : output.substr(0, 7) + "~" + output.substr(output.length() - 6);
+}
 
 void PrintTryCancel::operator()() const
 {
@@ -53,7 +86,7 @@ void PrintBase::update_object_placeholders(DynamicConfig &config, const std::str
     if (! input_file.empty()) {
         // get basename with and without suffix
         const std::string input_filename = boost::filesystem::path(input_file).filename().string();
-        const std::string input_filename_base = input_filename.substr(0, input_filename.find_last_of("."));
+        const std::string input_filename_base = transliterate(input_filename.substr(0, input_filename.find_last_of(".")));
 //        config.set_key_value("input_filename", new ConfigOptionString(input_filename_base + default_output_ext));
         config.set_key_value("input_filename_base", new ConfigOptionString(input_filename_base));
     }
@@ -71,7 +104,7 @@ std::string PrintBase::output_filename(const std::string &format, const std::str
     this->update_object_placeholders(cfg, default_ext);
     if (! filename_base.empty()) {
 //		cfg.set_key_value("input_filename", new ConfigOptionString(filename_base + default_ext));
-		cfg.set_key_value("input_filename_base", new ConfigOptionString(filename_base));
+		cfg.set_key_value("input_filename_base", new ConfigOptionString(transliterate(filename_base)));
     }
     try {
 		boost::filesystem::path filename = format.empty() ?
