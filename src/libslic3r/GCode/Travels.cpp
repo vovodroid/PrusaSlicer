@@ -433,6 +433,9 @@ Points3 generate_travel_to_extrusion(
         elevation_params.slope_end + elevation_params.blend_width / 2.0,
         elevation_params.parabola_points_count
     );
+    if (initial_elevation + elevation_params.lift_height < config.z_clearance)
+        elevation_params.lift_height = config.z_clearance - initial_elevation;
+
     Points3 result{generate_elevated_travel(
         xy_path.points, ensure_points_at_distances, initial_elevation,
         ElevatedTravelFormula{elevation_params}
