@@ -394,6 +394,11 @@ void PrintObject::prepare_infill()
     this->bridge_over_infill();
     m_print->throw_if_canceled();
 
+    if (this->config().bridge_fan_speed_layers > 0) {
+        this->mark_bridge_distance(stInternalSolid);
+        this->mark_bridge_distance(stInternal);
+    };
+
     // combine fill surfaces to honor the "infill every N layers" option
     this->combine_infill();
     m_print->throw_if_canceled();
@@ -2542,6 +2547,89 @@ void PrintObject::bridge_over_infill()
     BOOST_LOG_TRIVIAL(info) << "Bridge over infill - End" << log_memory_info();
 
 } // void PrintObject::bridge_over_infill()
+
+void find_polygons(Surfaces sf, Polygons* polygons)
+{
+    for (const Surface& surface : sf)
+        if (surface.surface_type == stBottomBridge ||
+            surface.surface_type == stInternalBridge ||
+            surface.bridge_dist > 0) {
+
+            Polygons plgs = to_polygons(surface.expolygon);
+
+            if (surface.surface_type == stBottomBridge || surface.surface_type == stInternalBridge)
+                for (Polygon& pl : plgs)
+                    pl.bridge_dist = 0;
+
+            polygons_append(*polygons, plgs);
+        }
+}
+
+void PrintObject::mark_bridge_distance(SurfaceType st_to_mark)
+{
+    for (LayerPtrs::iterator layer_it = m_layers.begin(); layer_it != m_layers.end(); ++layer_it) {
+        for (size_t region_id = 0; region_id < this->num_printing_regions(); ++region_id) {
+            // skip first layer
+            if (layer_it == this->layers().begin()) continue;
+
+            Layer* layer = *layer_it;
+            LayerRegion* layerm = layer->regions()[region_id];
+
+            Polygons poly_to_check;
+            // extract the surfaces that might be marked
+            layerm->fill_surfaces().filter_by_type(st_to_mark, &poly_to_check);
+            
+            Polygons poly_to_replace;
+
+            // check the lower layer
+            if (int(layer_it - this->layers().begin()) - 1 >= 0) {
+                const Layer* lower_layer = this->layers()[int(layer_it - this->layers().begin()) - 1];
+
+                // iterate through regions and collect internal surfaces
+                Polygons lower_internal;
+                for (LayerRegion* lower_layerm : lower_layer->m_regions) {
+                    find_polygons(lower_layerm->fill_surfaces().surfaces, &lower_internal);
+                }
+
+                for (Polygon& low : lower_internal) {
+                    
+                    // intersect such lower internal surfaces with the candidate solid surfaces
+                    for (Polygon& p : intersection(poly_to_check, ExPolygon(low))) {
+                        if (low.bridge_dist >= 0)
+                            p.bridge_dist = low.bridge_dist + 1;
+                        poly_to_replace.emplace_back(p);
+                    }
+                }
+            }
+
+            if (poly_to_replace.empty()) continue;
+
+            // compute the remaning internal solid surfaces as difference
+            ExPolygons not_expoly_to_replace = diff_ex(poly_to_check, poly_to_replace, ApplySafetyOffset::Yes);
+            // build the new collection of fill_surfaces
+            {
+                Surfaces new_surfaces;
+                for (Surfaces::iterator surface = layerm->mutable_fill_surfaces().surfaces.begin(); surface != layerm->fill_surfaces().surfaces.end(); ++surface) {
+                    if (surface->surface_type != st_to_mark) {
+                        new_surfaces.push_back(*surface);
+                    }
+                }
+
+                for (ExPolygon& ex : not_expoly_to_replace) {//original
+                    new_surfaces.push_back(Surface(st_to_mark, ex));
+                }
+
+                for (Polygon& ex : poly_to_replace) {//replaced
+                    Surface s = Surface(st_to_mark, ExPolygon (ex));
+                    s.bridge_dist = ex.bridge_dist;
+                    new_surfaces.push_back(s);
+                }
+
+                layerm->mutable_fill_surfaces().set(new_surfaces);
+            }
+        }
+    }
+}
 
 static void clamp_exturder_to_default(ConfigOptionInt &opt, size_t num_extruders)
 {

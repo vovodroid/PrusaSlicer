@@ -57,27 +57,32 @@ public:
     unsigned short  thickness_layers {  1 };  // in layers
     double          bridge_angle     { -1. }; // in radians, ccw, 0 = East, only 0+ (negative means undefined)
     unsigned short  extra_perimeters {  0 };
+    int             bridge_dist      { -1 };
     
     Surface(const Slic3r::Surface &rhs) :
         surface_type(rhs.surface_type), expolygon(rhs.expolygon),
         thickness(rhs.thickness), thickness_layers(rhs.thickness_layers), 
-        bridge_angle(rhs.bridge_angle), extra_perimeters(rhs.extra_perimeters) {}
+        bridge_angle(rhs.bridge_angle), extra_perimeters(rhs.extra_perimeters),
+        bridge_dist(rhs.bridge_dist) {}
     Surface(SurfaceType surface_type, const ExPolygon &expolygon) : 
         surface_type(surface_type), expolygon(expolygon) {}
     Surface(const Surface &templ, const ExPolygon &expolygon) :
         surface_type(templ.surface_type), expolygon(expolygon),
         thickness(templ.thickness), thickness_layers(templ.thickness_layers),
-        bridge_angle(templ.bridge_angle), extra_perimeters(templ.extra_perimeters) {}
+        bridge_angle(templ.bridge_angle), extra_perimeters(templ.extra_perimeters),
+        bridge_dist(templ.bridge_dist) {}
     Surface(Surface &&rhs) :
         surface_type(rhs.surface_type), expolygon(std::move(rhs.expolygon)),
         thickness(rhs.thickness), thickness_layers(rhs.thickness_layers), 
-        bridge_angle(rhs.bridge_angle), extra_perimeters(rhs.extra_perimeters) {}
+        bridge_angle(rhs.bridge_angle), extra_perimeters(rhs.extra_perimeters),
+        bridge_dist(rhs.bridge_dist) {}
     Surface(SurfaceType surface_type, ExPolygon &&expolygon) : 
         surface_type(surface_type), expolygon(std::move(expolygon)) {}
     Surface(const Surface &templ, ExPolygon &&expolygon) :
         surface_type(templ.surface_type), expolygon(std::move(expolygon)),
             thickness(templ.thickness), thickness_layers(templ.thickness_layers), 
-            bridge_angle(templ.bridge_angle), extra_perimeters(templ.extra_perimeters) {}
+            bridge_angle(templ.bridge_angle), extra_perimeters(templ.extra_perimeters),
+       		bridge_dist(templ.bridge_dist) {}
 
     Surface& operator=(const Surface &rhs)
     {
@@ -87,6 +92,7 @@ public:
         thickness_layers = rhs.thickness_layers;
         bridge_angle     = rhs.bridge_angle;
         extra_perimeters = rhs.extra_perimeters;
+        bridge_dist      = rhs.bridge_dist;
         return *this;
     }
 
@@ -98,6 +104,7 @@ public:
         thickness_layers = rhs.thickness_layers;
         bridge_angle     = rhs.bridge_angle;
         extra_perimeters = rhs.extra_perimeters;
+        bridge_dist      = rhs.bridge_dist;
         return *this;
     }
 

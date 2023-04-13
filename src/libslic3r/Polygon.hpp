@@ -49,8 +49,8 @@ public:
     Polygon() = default;
     explicit Polygon(const Points &points) : MultiPoint(points) {}
 	Polygon(std::initializer_list<Point> points) : MultiPoint(points) {}
-    Polygon(const Polygon &other) : MultiPoint(other.points) {}
-    Polygon(Polygon &&other) : MultiPoint(std::move(other.points)) {}
+    Polygon(const Polygon &other) : MultiPoint(other.points), bridge_dist(other.bridge_dist) {}
+    Polygon(Polygon &&other) : MultiPoint(std::move(other.points)), bridge_dist(other.bridge_dist) {}
 	static Polygon new_scale(const std::vector<Vec2d> &points) { 
         Polygon pgn;
         pgn.points.reserve(points.size());
@@ -58,8 +58,8 @@ public:
             pgn.points.emplace_back(Point::new_scale(pt(0), pt(1)));
 		return pgn;
 	}
-    Polygon& operator=(const Polygon &other) { points = other.points; return *this; }
-    Polygon& operator=(Polygon &&other) { points = std::move(other.points); return *this; }
+    Polygon& operator=(const Polygon& other) { points = other.points; bridge_dist = other.bridge_dist; return *this; }
+    Polygon& operator=(Polygon &&other) { points = std::move(other.points); bridge_dist = other.bridge_dist; return *this; }
 
     Point& operator[](Points::size_type idx) { return this->points[idx]; }
     const Point& operator[](Points::size_type idx) const { return this->points[idx]; }
@@ -112,6 +112,8 @@ public:
 
     using iterator = Points::iterator;
     using const_iterator = Points::const_iterator;
+
+    int bridge_dist { -1 };
 };
 
 inline bool operator==(const Polygon &lhs, const Polygon &rhs) { return lhs.points == rhs.points; }

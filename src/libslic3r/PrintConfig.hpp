@@ -667,6 +667,7 @@ PRINT_CONFIG_CLASS_DEFINE(
     ((ConfigOptionBool,                thick_bridges))
     ((ConfigOptionFloat,               xy_size_compensation))
     ((ConfigOptionBool,                wipe_into_objects))
+    ((ConfigOptionInt,                 bridge_fan_speed_layers))
 )
 
 PRINT_CONFIG_CLASS_DEFINE(

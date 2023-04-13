@@ -2208,7 +2208,12 @@ void TabFilament::build()
         line.append_option(optgroup->get_option("max_fan_speed"));
         optgroup->append_line(line);
 
-        optgroup->append_single_option_line("bridge_fan_speed", category_path + "fan-settings");
+        line = { "Bridges fan speed", "" };
+        line.label_path = category_path + "fan-settings";
+        line.append_option(optgroup->get_option("bridge_fan_speed"));
+        line.append_option(optgroup->get_option("bridge_fan_speed_layers"));
+        optgroup->append_line(line);
+
         optgroup->append_single_option_line("disable_fan_first_layers", category_path + "fan-settings");
         optgroup->append_single_option_line("full_fan_speed_layer", category_path + "fan-settings");
 

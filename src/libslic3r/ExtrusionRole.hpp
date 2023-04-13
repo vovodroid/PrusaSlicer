@@ -35,6 +35,7 @@ enum class ExtrusionRoleModifier : uint16_t {
     // Indicator that the extrusion role was mixed from multiple differing extrusion roles,
     // for example from Support and SupportInterface.
     Mixed,
+    AboveBridge,
     // Stopper, there should be maximum 16 modifiers defined for uint16_t bit mask.
     Count
 };
@@ -58,8 +59,12 @@ struct ExtrusionRole : public ExtrusionRoleModifiers
     static constexpr const ExtrusionRoleModifiers OverhangPerimeter{ ExtrusionRoleModifier::Perimeter | ExtrusionRoleModifier::Bridge };
     // Sparse internal infill.
     static constexpr const ExtrusionRoleModifiers InternalInfill{ ExtrusionRoleModifier::Infill };
+    static constexpr const ExtrusionRoleModifiers InternalInfillAboveBridge{ InternalInfill | ExtrusionRoleModifier::AboveBridge };
+
     // Solid internal infill.
     static constexpr const ExtrusionRoleModifiers SolidInfill{ ExtrusionRoleModifier::Infill | ExtrusionRoleModifier::Solid };
+    static constexpr const ExtrusionRoleModifiers SolidInfillAboveBridge{ SolidInfill | ExtrusionRoleModifier::AboveBridge };
+
     // Top solid infill (visible).
     //FIXME why there is no bottom solid infill type?
     static constexpr const ExtrusionRoleModifiers TopSolidInfill{ ExtrusionRoleModifier::Infill | ExtrusionRoleModifier::Solid | ExtrusionRoleModifier::External };
@@ -95,6 +100,27 @@ struct ExtrusionRole : public ExtrusionRoleModifiers
     bool is_support_base() const { return this->is_support() && ! this->is_external(); }
     bool is_support_interface() const { return this->is_support() && this->is_external(); }
     bool is_mixed() const { return this->ExtrusionRoleModifiers::has(ExtrusionRoleModifier::Mixed); }
+
+    constexpr bool operator == (const ExtrusionRole& rhs) const
+    {
+        if (this->ExtrusionRoleModifiers::operator==(rhs)
+                ||
+            this->ExtrusionRoleModifiers::operator==(ExtrusionRole::InternalInfillAboveBridge) &&
+            rhs.ExtrusionRoleModifiers::operator==(ExtrusionRole::InternalInfill)
+                ||
+            this->ExtrusionRoleModifiers::operator==(ExtrusionRole::InternalInfill) &&
+            rhs.ExtrusionRoleModifiers::operator==(ExtrusionRole::InternalInfillAboveBridge)
+                ||
+            this->ExtrusionRoleModifiers::operator==(ExtrusionRole::SolidInfillAboveBridge) &&
+            rhs.ExtrusionRoleModifiers::operator==(ExtrusionRole::SolidInfill)
+                ||
+            this->ExtrusionRoleModifiers::operator==(ExtrusionRole::SolidInfill) &&
+            rhs.ExtrusionRoleModifiers::operator==(ExtrusionRole::SolidInfillAboveBridge)
+            )
+            return true;
+        else
+            return false;
+    }
 
     // Brim is currently marked as skirt.
     bool is_skirt() const { return this->ExtrusionRoleModifiers::has(ExtrusionRoleModifier::Skirt); }
