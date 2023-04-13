@@ -495,6 +495,7 @@ static std::vector<std::string> s_Preset_filament_options {
     "filament_multitool_ramming", "filament_multitool_ramming_volume", "filament_multitool_ramming_flow", 
     "temperature", "idle_temperature", "first_layer_temperature", "bed_temperature", "first_layer_bed_temperature", "fan_always_on", "cooling", "min_fan_speed",
     "max_fan_speed", "bridge_fan_speed", "disable_fan_first_layers", "full_fan_speed_layer", "fan_below_layer_time", "slowdown_below_layer_time", "min_print_speed",
+    "bridge_fan_speed_layers",
     "start_filament_gcode", "end_filament_gcode", "enable_dynamic_fan_speeds", "chamber_temperature", "chamber_minimal_temperature",
     "overhang_fan_speed_0", "overhang_fan_speed_1", "overhang_fan_speed_2", "overhang_fan_speed_3",
     // Retract overrides

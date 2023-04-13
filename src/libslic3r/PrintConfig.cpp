@@ -618,13 +618,21 @@ void PrintConfigDef::init_fff_params()
     def->set_default_value(new ConfigOptionFloat(0.));
 
     def = this->add("bridge_fan_speed", coInts);
-    def->label = L("Bridges fan speed");
+    def->label = L("");
     def->tooltip = L("This fan speed is enforced during all bridges and overhangs.");
     def->sidetext = L("%");
     def->min = 0;
     def->max = 100;
     def->mode = comExpert;
     def->set_default_value(new ConfigOptionInts { 100 });
+
+    def = this->add("bridge_fan_speed_layers", coInt);
+    def->label = L("for upper");
+    def->tooltip = L("This fan speed is enforced during number layer above bridge. Could greatly increase slicing time for tall models.");
+    def->sidetext = L("layers");
+    def->min = 0;
+    def->mode = comExpert;
+    def->set_default_value(new ConfigOptionInt( 0 ));
 
     def = this->add("bridge_flow_ratio", coFloat);
     def->label = L("Bridge flow ratio");

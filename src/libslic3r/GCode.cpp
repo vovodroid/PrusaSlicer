@@ -3488,7 +3488,7 @@ std::string GCodeGenerator::_extrude(
 
     std::string cooling_marker_setspeed_comments;
     if (m_enable_cooling_markers) {
-        if (path_attr.role.is_bridge())
+        if (path_attr.role.is_bridge() || path_attr.role.has(ExtrusionRoleModifier::AboveBridge))
             gcode += ";_BRIDGE_FAN_START\n";
         else
             cooling_marker_setspeed_comments = ";_EXTRUDE_SET_SPEED";
@@ -3550,7 +3550,7 @@ std::string GCodeGenerator::_extrude(
     }
 
     if (m_enable_cooling_markers)
-        gcode += path_attr.role.is_bridge() ? ";_BRIDGE_FAN_END\n" : ";_EXTRUDE_END\n";
+        gcode += (path_attr.role.is_bridge() || path_attr.role.has(ExtrusionRoleModifier::AboveBridge)) ? ";_BRIDGE_FAN_END\n" : ";_EXTRUDE_END\n";
 
     if (dynamic_speed_and_fan_speed.second >= 0)
         gcode += ";_RESET_FAN_SPEED\n";

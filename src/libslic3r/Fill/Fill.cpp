@@ -165,6 +165,15 @@ std::vector<SurfaceFill> group_fills(const Layer &layer)
 		                (surface.is_solid() ?
 		                    (surface.is_top() ? ExtrusionRole::TopSolidInfill : ExtrusionRole::SolidInfill) :
 							ExtrusionRole::InternalInfill);
+
+				if (surface.bridge_dist > 0 && surface.bridge_dist <= layer.object()->config().bridge_fan_speed_layers){
+					if (params.extrusion_role == ExtrusionRole::InternalInfill)
+						params.extrusion_role = ExtrusionRole::InternalInfillAboveBridge;
+
+					if (params.extrusion_role == ExtrusionRole::SolidInfill)
+						params.extrusion_role = ExtrusionRole::SolidInfillAboveBridge;
+				};
+
 		        params.bridge_angle = float(surface.bridge_angle);
 		        params.angle 		= float(Geometry::deg2rad(region_config.fill_angle.value));
 		        
