@@ -404,7 +404,7 @@ void Preview::create_sliders()
     m_layers_slider->show_ruler(wxGetApp().app_config->get_bool("show_ruler_in_dbl_slider"), wxGetApp().app_config->get_bool("show_ruler_bg_in_dbl_slider"));
 
     m_layers_slider->SetDrawMode(wxGetApp().preset_bundle->printers.get_edited_preset().printer_technology() == ptSLA,
-                                 wxGetApp().preset_bundle->prints.get_edited_preset().config.opt_bool("complete_objects"));
+                                 wxGetApp().preset_bundle->prints.get_edited_preset().config.opt_bool("complete_objects") || wxGetApp().preset_bundle->prints.get_edited_preset().config.opt_bool("parallel_objects"));
 
     m_layers_slider->set_callback_on_thumb_move( [this]() -> void { Preview::on_layers_slider_scroll_changed(); } );
 
@@ -643,7 +643,9 @@ void Preview::update_layers_slider(const std::vector<double>& layers_z, bool kee
     m_layers_slider->SetTicksValues(ticks_info_from_model);
 
     bool sla_print_technology = plater->printer_technology() == ptSLA;
-    bool sequential_print = wxGetApp().preset_bundle->prints.get_edited_preset().config.opt_bool("complete_objects");
+    bool sequential_print = wxGetApp().preset_bundle->prints.get_edited_preset().config.opt_bool("complete_objects")
+                         || wxGetApp().preset_bundle->prints.get_edited_preset().config.opt_bool("parallel_objects");
+    
     m_layers_slider->SetDrawMode(sla_print_technology, sequential_print);
     if (sla_print_technology)
         m_layers_slider->SetLayersTimes(plater->sla_print().print_statistics().layers_times_running_total);
