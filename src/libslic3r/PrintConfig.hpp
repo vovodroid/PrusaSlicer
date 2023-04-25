@@ -894,6 +894,7 @@ PRINT_CONFIG_CLASS_DERIVED_DEFINE(
     ((ConfigOptionInts,               chamber_temperature))
     ((ConfigOptionInts,               chamber_minimal_temperature))
     ((ConfigOptionBool,               complete_objects))
+    ((ConfigOptionBool,               parallel_objects))
     ((ConfigOptionFloats,             colorprint_heights))
     ((ConfigOptionBools,              cooling))
     ((ConfigOptionFloat,              default_acceleration))

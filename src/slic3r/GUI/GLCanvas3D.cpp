@@ -2388,7 +2388,8 @@ void GLCanvas3D::reload_scene(bool refresh_immediately, bool force_full_scene_re
         unsigned int extruders_count = (unsigned int)dynamic_cast<const ConfigOptionFloats*>(m_config->option("nozzle_diameter"))->values.size();
 
         const bool wt = dynamic_cast<const ConfigOptionBool*>(m_config->option("wipe_tower"))->value;
-        const bool co = dynamic_cast<const ConfigOptionBool*>(m_config->option("complete_objects"))->value;
+        const bool co = dynamic_cast<const ConfigOptionBool*>(m_config->option("complete_objects"))->value 
+                     || dynamic_cast<const ConfigOptionBool*>(m_config->option("parallel_objects"))->value;
 
         if (extruders_count > 1 && wt && !co) {
 
@@ -3435,7 +3436,7 @@ void GLCanvas3D::on_mouse(wxMouseEvent& evt)
                 c == GLGizmosManager::EType::Scale ||
                 c == GLGizmosManager::EType::Rotate) {
                 show_sinking_contours();
-                if (current_printer_technology() == ptFFF && fff_print()->config().complete_objects)
+                if (current_printer_technology() == ptFFF && (fff_print()->config().complete_objects || fff_print()->config().parallel_objects))
                     update_sequential_clearance(true);
             }
         }
@@ -3640,7 +3641,7 @@ void GLCanvas3D::on_mouse(wxMouseEvent& evt)
             TransformationType trafo_type;
             trafo_type.set_relative();
             m_selection.translate(cur_pos - m_mouse.drag.start_position_3D, trafo_type);
-            if (current_printer_technology() == ptFFF && fff_print()->config().complete_objects)
+            if (current_printer_technology() == ptFFF && (fff_print()->config().complete_objects || fff_print()->config().parallel_objects))
                 update_sequential_clearance(false);
             wxGetApp().obj_manipul()->set_dirty();
             m_dirty = true;
@@ -3957,7 +3958,7 @@ void GLCanvas3D::do_move(const std::string& snapshot_type)
     if (wipe_tower_origin != Vec3d::Zero())
         post_event(Vec3dEvent(EVT_GLCANVAS_WIPETOWER_MOVED, std::move(wipe_tower_origin)));
 
-    if (current_printer_technology() == ptFFF && fff_print()->config().complete_objects) {
+    if (current_printer_technology() == ptFFF && (fff_print()->config().complete_objects || fff_print()->config().parallel_objects)) {
         update_sequential_clearance(true);
         m_sequential_print_clearance.m_evaluating = true;
     }
@@ -4045,7 +4046,7 @@ void GLCanvas3D::do_rotate(const std::string& snapshot_type)
     if (!done.empty())
         post_event(SimpleEvent(EVT_GLCANVAS_INSTANCE_ROTATED));
 
-    if (current_printer_technology() == ptFFF && fff_print()->config().complete_objects) {
+    if (current_printer_technology() == ptFFF && (fff_print()->config().complete_objects || fff_print()->config().parallel_objects)) {
         update_sequential_clearance(true);
         m_sequential_print_clearance.m_evaluating = true;
     }
@@ -4122,7 +4123,7 @@ void GLCanvas3D::do_scale(const std::string& snapshot_type)
     if (!done.empty())
         post_event(SimpleEvent(EVT_GLCANVAS_INSTANCE_SCALED));
 
-    if (current_printer_technology() == ptFFF && fff_print()->config().complete_objects) {
+    if (current_printer_technology() == ptFFF && (fff_print()->config().complete_objects || fff_print()->config().parallel_objects)) {
         update_sequential_clearance(true);
         m_sequential_print_clearance.m_evaluating = true;
     }
@@ -4381,7 +4382,7 @@ void GLCanvas3D::mouse_up_cleanup()
 
 void GLCanvas3D::update_sequential_clearance(bool force_contours_generation)
 {
-    if (current_printer_technology() != ptFFF || !fff_print()->config().complete_objects)
+    if (current_printer_technology() != ptFFF && !(fff_print()->config().complete_objects || fff_print()->config().parallel_objects))
         return;
 
     if (m_layers_editing.is_enabled())
@@ -5932,7 +5933,7 @@ void GLCanvas3D::_render_selection()
 
 void GLCanvas3D::_render_sequential_clearance()
 {
-    if (current_printer_technology() != ptFFF || !fff_print()->config().complete_objects)
+    if (current_printer_technology() != ptFFF || !(fff_print()->config().complete_objects || fff_print()->config().parallel_objects))
         return;
 
     if (m_layers_editing.is_enabled())
@@ -6057,7 +6058,9 @@ void GLCanvas3D::_render_overlays()
         m_layers_editing.render_overlay(*this);
 
     const ConfigOptionBool* opt = dynamic_cast<const ConfigOptionBool*>(m_config->option("complete_objects"));
-    bool sequential_print = opt != nullptr && opt->value;
+    const ConfigOptionBool* opl = dynamic_cast<const ConfigOptionBool*>(m_config->option("parallel_objects"));
+    
+    bool sequential_print = (opt != nullptr && opt->value) || (opl != nullptr && opl->value);
     std::vector<const ModelInstance*> sorted_instances;
     if (sequential_print) {
         for (ModelObject* model_object : m_model->objects)
