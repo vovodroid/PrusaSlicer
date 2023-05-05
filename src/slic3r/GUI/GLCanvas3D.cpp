@@ -206,7 +206,7 @@ void GLCanvas3D::LayersEditing::render_overlay(const GLCanvas3D& canvas)
     
     ImGui::Separator();
     if (ImGuiPureWrap::button(_u8L("Adaptive")))
-        wxPostEvent((wxEvtHandler*)canvas.get_wxglcanvas(), Event<float>(EVT_GLCANVAS_ADAPTIVE_LAYER_HEIGHT_PROFILE, m_adaptive_quality));
+        wxPostEvent((wxEvtHandler*)canvas.get_wxglcanvas(), HeightProfileAdaptiveEvent(EVT_GLCANVAS_ADAPTIVE_LAYER_HEIGHT_PROFILE, m_adaptive_params));
 
     ImGui::SameLine();
     float text_align = ImGui::GetCursorPosX();
@@ -222,12 +222,75 @@ void GLCanvas3D::LayersEditing::render_overlay(const GLCanvas3D& canvas)
     float widget_align = ImGui::GetCursorPosX();
     const float style_scaling = wxGetApp().imgui()->get_style_scaling();
     ImGui::PushItemWidth(style_scaling * 120.0f);
-    m_adaptive_quality = std::clamp(m_adaptive_quality, 0.0f, 1.f);
-    wxGetApp().imgui()->slider_float("", &m_adaptive_quality, 0.0f, 1.f, "%.2f");
+    m_adaptive_params.adaptive_quality = std::clamp(m_adaptive_params.adaptive_quality, 0.0f, 1.f);
+    wxGetApp().imgui()->slider_float("", &m_adaptive_params.adaptive_quality, 0.0f, 1.f, "%.2f");
+    //min/max height for Adaptive min/max height
+    float min_height = 0.f;
+    float max_height = 1000.f;
+    PrinterTechnology printer_technology = canvas.current_printer_technology();
+    if (printer_technology == ptFFF) {
+        const ConfigOptionFloats* extruders_min_height = dynamic_cast<const ConfigOptionFloats*>(m_config->option("min_layer_height"));
+        const ConfigOptionFloats* extruders_max_height = dynamic_cast<const ConfigOptionFloats*>(m_config->option("max_layer_height"));
+        const ConfigOptionFloats* nozzle_diameter = dynamic_cast<const ConfigOptionFloats*>(m_config->option("nozzle_diameter"));
+        min_height = 0.f;
+        max_height = std::numeric_limits<float>::max();
+        assert(extruders_min_height->values.size() == extruders_max_height->values.size());
+        assert(extruders_min_height->values.size() == nozzle_diameter->values.size());
+        for (size_t idx_extruder = 0; idx_extruder < extruders_min_height->values.size(); ++idx_extruder) {
+            min_height = std::max(min_height, float(extruders_min_height->get_at(idx_extruder) /*get_abs_value(idx_extruder, nozzle_diameter->getFloat(idx_extruder)))*/));
+            max_height = std::min(max_height, float(extruders_max_height->get_at(idx_extruder)  /*get_abs_value(idx_extruder, nozzle_diameter->getFloat(idx_extruder)))*/));
+        }
+        if (m_adaptive_params.min_adaptive_layer_height < 0) {
+            m_adaptive_params.min_adaptive_layer_height = min_height;
+            m_adaptive_params.max_adaptive_layer_height = max_height;
+        }
+    }
+    else {
+        const ConfigOptionFloat* layer_height_ptr = dynamic_cast<const ConfigOptionFloat*>(m_config->option("layer_height"));
+        double layer_height = layer_height_ptr ? layer_height_ptr->value : 0.2;
+        max_height = layer_height * 10;
+        if (m_adaptive_params.min_adaptive_layer_height < 0) {
+            m_adaptive_params.min_adaptive_layer_height = layer_height / 4;
+            m_adaptive_params.max_adaptive_layer_height = layer_height * 4;
+        }
+    }
+
+    ImGui::SetCursorPosX(text_align);
+    ImGui::AlignTextToFramePadding();
+    ImGuiPureWrap::text(_u8L("Min layer height"));
+    if (ImGui::IsItemHovered()) {
+        ImGui::BeginTooltip();
+        ImGui::TextUnformatted(_L("Minimum layer height. Limit for better quality/layer adhesion.").ToUTF8());
+        ImGui::EndTooltip();
+    }
+
+    ImGui::SameLine();
+    ImGui::SetCursorPosX(widget_align);
+    ImGui::PushItemWidth(style_scaling * 120.0f);
+    if (wxGetApp().imgui()->slider_float("##min_adaptive_layer_height", &m_adaptive_params.min_adaptive_layer_height, min_height, max_height, "%.2f")) {
+        m_adaptive_params.min_adaptive_layer_height = std::max(m_adaptive_params.min_adaptive_layer_height, min_height);
+        m_adaptive_params.max_adaptive_layer_height = std::max(m_adaptive_params.max_adaptive_layer_height, m_adaptive_params.min_adaptive_layer_height);
+    }
+
+    ImGui::SetCursorPosX(text_align);
+    ImGui::AlignTextToFramePadding();
+    ImGuiPureWrap::text(_u8L("Max layer height"));
+    if (ImGui::IsItemHovered()) {
+        ImGui::BeginTooltip();
+        ImGui::TextUnformatted(_L("Maximum layer height. Limit for better quality/layer adhesion.").ToUTF8());
+        ImGui::EndTooltip();
+    }
+
+    ImGui::SameLine();
+    ImGui::SetCursorPosX(widget_align);
+    ImGui::PushItemWidth(style_scaling * 120.0f);
+    if (wxGetApp().imgui()->slider_float("##max_adaptive_layer_height", &m_adaptive_params.max_adaptive_layer_height, min_height, max_height, "%.2f")) {
+        m_adaptive_params.min_adaptive_layer_height = std::min(m_adaptive_params.max_adaptive_layer_height, m_adaptive_params.min_adaptive_layer_height);
+    }
 
     ImGui::Separator();
     if (ImGuiPureWrap::button(_u8L("Smooth")))
-        wxPostEvent((wxEvtHandler*)canvas.get_wxglcanvas(), HeightProfileSmoothEvent(EVT_GLCANVAS_SMOOTH_LAYER_HEIGHT_PROFILE, m_smooth_params));
+        wxPostEvent((wxEvtHandler*)canvas.get_wxglcanvas(), HeightProfileSmoothEvent(EVT_GLCANVAS_SMOOTH_LAYER_HEIGHT_PROFILE, m_adaptive_params));
 
     ImGui::SameLine();
     ImGui::SetCursorPosX(text_align);
@@ -236,10 +299,10 @@ void GLCanvas3D::LayersEditing::render_overlay(const GLCanvas3D& canvas)
     ImGui::SameLine();
     ImGui::SetCursorPosX(widget_align);
     ImGui::PushItemWidth(style_scaling * 120.0f);
-    int radius = (int)m_smooth_params.radius;
+    int radius = (int)m_adaptive_params.radius;
     if (ImGui::SliderInt("##1", &radius, 1, 10)) {
         radius = std::clamp(radius, 1, 10);
-        m_smooth_params.radius = (unsigned int)radius;
+        m_adaptive_params.radius = (unsigned int)radius;
     }
 
     ImGui::SetCursorPosX(text_align);
@@ -250,7 +313,7 @@ void GLCanvas3D::LayersEditing::render_overlay(const GLCanvas3D& canvas)
         ImGui::SetCursorPosX(widget_align);
 
     ImGui::PushItemWidth(style_scaling * 120.0f);
-    ImGuiPureWrap::checkbox("##2", m_smooth_params.keep_min);
+    ImGuiPureWrap::checkbox("##2", m_adaptive_params.keep_min);
 
     ImGui::Separator();
     if (ImGuiPureWrap::button(_u8L("Reset")))
@@ -564,17 +627,17 @@ void GLCanvas3D::LayersEditing::reset_layer_height_profile(GLCanvas3D& canvas)
     wxGetApp().obj_list()->update_info_items(last_object_id);
 }
 
-void GLCanvas3D::LayersEditing::adaptive_layer_height_profile(GLCanvas3D& canvas, float quality_factor)
+void GLCanvas3D::LayersEditing::adaptive_layer_height_profile(GLCanvas3D& canvas, float quality_factor, float min_adaptive_layer_height, float max_adaptive_layer_height)
 {
     this->update_slicing_parameters();
-    m_layer_height_profile = layer_height_profile_adaptive(*m_slicing_parameters, *m_model_object, quality_factor);
+    m_layer_height_profile = layer_height_profile_adaptive(*m_slicing_parameters, *m_model_object, quality_factor, min_adaptive_layer_height, max_adaptive_layer_height);
     const_cast<ModelObject*>(m_model_object)->layer_height_profile.set(m_layer_height_profile);
     m_layers_texture.valid = false;
     canvas.post_event(SimpleEvent(EVT_GLCANVAS_SCHEDULE_BACKGROUND_PROCESS));
     wxGetApp().obj_list()->update_info_items(last_object_id);
 }
 
-void GLCanvas3D::LayersEditing::smooth_layer_height_profile(GLCanvas3D& canvas, const HeightProfileSmoothingParams& smoothing_params)
+void GLCanvas3D::LayersEditing::smooth_layer_height_profile(GLCanvas3D& canvas, const HeightProfileAdaptiveParams& smoothing_params)
 {
     this->update_slicing_parameters();
     m_layer_height_profile = smooth_height_profile(m_layer_height_profile, *m_slicing_parameters, smoothing_params);
@@ -1022,7 +1085,7 @@ wxDEFINE_EVENT(EVT_GLCANVAS_UNDO, SimpleEvent);
 wxDEFINE_EVENT(EVT_GLCANVAS_REDO, SimpleEvent);
 wxDEFINE_EVENT(EVT_GLCANVAS_COLLAPSE_SIDEBAR, SimpleEvent);
 wxDEFINE_EVENT(EVT_GLCANVAS_RESET_LAYER_HEIGHT_PROFILE, SimpleEvent);
-wxDEFINE_EVENT(EVT_GLCANVAS_ADAPTIVE_LAYER_HEIGHT_PROFILE, Event<float>);
+wxDEFINE_EVENT(EVT_GLCANVAS_ADAPTIVE_LAYER_HEIGHT_PROFILE, HeightProfileAdaptiveEvent);
 wxDEFINE_EVENT(EVT_GLCANVAS_SMOOTH_LAYER_HEIGHT_PROFILE, HeightProfileSmoothEvent);
 wxDEFINE_EVENT(EVT_GLCANVAS_RELOAD_FROM_DISK, SimpleEvent);
 wxDEFINE_EVENT(EVT_GLCANVAS_RENDER_TIMER, wxTimerEvent/*RenderTimerEvent*/);
@@ -1684,15 +1747,15 @@ void GLCanvas3D::reset_layer_height_profile()
     m_dirty = true;
 }
 
-void GLCanvas3D::adaptive_layer_height_profile(float quality_factor)
+void GLCanvas3D::adaptive_layer_height_profile(const HeightProfileAdaptiveParams& adaptive_params)
 {
     wxGetApp().plater()->take_snapshot(_L("Variable layer height - Adaptive"));
-    m_layers_editing.adaptive_layer_height_profile(*this, quality_factor);
+    m_layers_editing.adaptive_layer_height_profile(*this, adaptive_params.adaptive_quality, adaptive_params.min_adaptive_layer_height, adaptive_params.max_adaptive_layer_height);
     m_layers_editing.state = LayersEditing::Completed;
     m_dirty = true;
 }
 
-void GLCanvas3D::smooth_layer_height_profile(const HeightProfileSmoothingParams& smoothing_params)
+void GLCanvas3D::smooth_layer_height_profile(const HeightProfileAdaptiveParams& smoothing_params)
 {
     wxGetApp().plater()->take_snapshot(_L("Variable layer height - Smooth all"));
     m_layers_editing.smooth_layer_height_profile(*this, smoothing_params);

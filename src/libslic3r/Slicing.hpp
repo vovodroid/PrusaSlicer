@@ -29,6 +29,7 @@ class DynamicPrintConfig;
 // Parameters to guide object slicing and support generation.
 // The slicing parameters account for a raft and whether the 1st object layer is printed with a normal or a bridging flow
 // (using a normal flow over a soluble support, using a bridging flow over a non-soluble support).
+//TOSO: only use coordf_t for scaled coordinates.
 struct SlicingParameters
 {
 	SlicingParameters() = default;
@@ -71,7 +72,7 @@ struct SlicingParameters
 	// or by the variable layer thickness table.
     coordf_t    layer_height { 0 };
     // Minimum / maximum layer height, to be used for the automatic adaptive layer height algorithm,
-    // or by an interactive layer height editor.
+    // or by an interactive layer height editor. (unscaled)
     coordf_t    min_layer_height { 0 };
     coordf_t    max_layer_height { 0 };
     coordf_t    max_suport_layer_height { 0 };
@@ -152,20 +153,23 @@ std::vector<coordf_t> layer_height_profile_from_ranges(
 
 std::vector<double> layer_height_profile_adaptive(
     const SlicingParameters& slicing_params,
-    const ModelObject& object, float quality_factor);
+    const ModelObject& object, float quality_factor, float min_adaptive_layer_height, float max_adaptive_layer_height);
 
-struct HeightProfileSmoothingParams
+struct HeightProfileAdaptiveParams
 {
     unsigned int radius;
     bool keep_min;
 
-    HeightProfileSmoothingParams() : radius(5), keep_min(false) {}
-    HeightProfileSmoothingParams(unsigned int radius, bool keep_min) : radius(radius), keep_min(keep_min) {}
+    float adaptive_quality;
+    float min_adaptive_layer_height;
+    float max_adaptive_layer_height;
+
+    HeightProfileAdaptiveParams() : radius(5), keep_min(false), adaptive_quality(0.5f), min_adaptive_layer_height(-1.f), max_adaptive_layer_height(-1.f) {} // -1 -> not initialized
 };
 
 std::vector<double> smooth_height_profile(
     const std::vector<double>& profile, const SlicingParameters& slicing_params,
-    const HeightProfileSmoothingParams& smoothing_params);
+    const HeightProfileAdaptiveParams& smoothing_params);
 
 enum LayerHeightEditActionType : unsigned int {
     LAYER_HEIGHT_EDIT_ACTION_INCREASE = 0,
