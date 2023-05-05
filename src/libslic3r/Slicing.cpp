@@ -242,8 +242,15 @@ std::vector<coordf_t> layer_height_profile_from_ranges(
 
 // Based on the work of @platsch
 // Fill layer_height_profile by heights ensuring a prescribed maximum cusp height.
-std::vector<double> layer_height_profile_adaptive(const SlicingParameters& slicing_params, const ModelObject& object, float quality_factor)
+std::vector<double> layer_height_profile_adaptive(const SlicingParameters& slicing_params, const ModelObject& object, float quality_factor, float min_adaptive_layer_height, float max_adaptive_layer_height)
 {
+    if (min_adaptive_layer_height > max_adaptive_layer_height) {
+        float temp = max_adaptive_layer_height;
+        max_adaptive_layer_height = min_adaptive_layer_height;
+        min_adaptive_layer_height = temp;
+    }
+
+
     // 1) Initialize the SlicingAdaptive class with the object meshes.
     SlicingAdaptive as;
     as.set_slicing_parameters(slicing_params);
@@ -262,10 +269,13 @@ std::vector<double> layer_height_profile_adaptive(const SlicingParameters& slici
     size_t current_facet = 0;
     // loop until we have at least one layer and the max slice_z reaches the object height
     while (print_z + EPSILON < slicing_params.object_print_z_uncompensated_height()) {
-        float height = slicing_params.max_layer_height;
+        float height = max_adaptive_layer_height > 0 ? std::min(max_adaptive_layer_height, float(slicing_params.max_layer_height)) : float(slicing_params.max_layer_height);
         // Slic3r::debugf "\n Slice layer: %d\n", $id;
         // determine next layer height
         float cusp_height = as.next_layer_height(float(print_z), quality_factor, current_facet);
+        if (min_adaptive_layer_height >= 0) {
+            cusp_height = std::max(float(min_adaptive_layer_height), cusp_height);
+        }
 
 #if 0
         // check for horizontal features and object size
@@ -330,9 +340,9 @@ std::vector<double> layer_height_profile_adaptive(const SlicingParameters& slici
     return layer_height_profile;
 }
 
-std::vector<double> smooth_height_profile(const std::vector<double>& profile, const SlicingParameters& slicing_params, const HeightProfileSmoothingParams& smoothing_params)
+std::vector<double> smooth_height_profile(const std::vector<double>& profile, const SlicingParameters& slicing_params, const HeightProfileAdaptiveParams& smoothing_params)
 {
-    auto gauss_blur = [&slicing_params](const std::vector<double>& profile, const HeightProfileSmoothingParams& smoothing_params) -> std::vector<double> {
+    auto gauss_blur = [&slicing_params](const std::vector<double>& profile, const HeightProfileAdaptiveParams& smoothing_params) -> std::vector<double> {
         auto gauss_kernel = [] (unsigned int radius) -> std::vector<double> {
             unsigned int size = 2 * radius + 1;
             std::vector<double> ret;
