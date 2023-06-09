@@ -108,6 +108,7 @@ enum InfillPattern : int {
     ipEnsuring,
     ipZigZag,
     ipCount,
+    ipAlterCentric
 };
 
 enum class IroningType {
