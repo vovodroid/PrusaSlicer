@@ -132,6 +132,7 @@ static const t_config_enum_values s_keys_map_InfillPattern {
     { "cubic",              ipCubic },
     { "line",               ipLine },
     { "concentric",         ipConcentric },
+    { "altercentric",       ipAlterCentric },
     { "honeycomb",          ipHoneycomb },
     { "3dhoneycomb",        ip3DHoneycomb },
     { "gyroid",             ipGyroid },
@@ -980,6 +981,7 @@ void PrintConfigDef::init_fff_params()
     def->set_enum<InfillPattern>({
         { "ensuring",           L("Ensuring") },
         { "concentric",         L("Concentric") },
+        { "altercentric",       L("AlterCentric") },
         { "rectilinear",        L("Rectilinear") },
         { "alignedrectilinear", L("Aligned Rectilinear") },
         { "monotonic",          L("Monotonic") },
@@ -1477,6 +1479,7 @@ void PrintConfigDef::init_fff_params()
         { "cubic",              L("Cubic")},
         { "line",               L("Line")},
         { "concentric",         L("Concentric")},
+        { "altercentric",       L("AlterCentric")},	
         { "honeycomb",          L("Honeycomb")},
         { "3dhoneycomb",        L("3D Honeycomb")},
         { "gyroid",             L("Gyroid")},
