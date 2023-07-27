@@ -292,6 +292,10 @@ void GLCanvas3D::LayersEditing::render_overlay(const GLCanvas3D& canvas)
     }
 
     ImGui::Separator();
+    if (ImGuiPureWrap::button(_u8L("Snap to horizontal surfaces")))
+        wxPostEvent((wxEvtHandler*)canvas.get_wxglcanvas(), HeightProfileAdaptiveEvent(EVT_GLCANVAS_SNAP_TO_HORIZONTAL_LAYER_HEIGHT_PROFILE, m_adaptive_params));
+
+    ImGui::Separator();
     if (ImGuiPureWrap::button(_u8L("Smooth")))
         wxPostEvent((wxEvtHandler*)canvas.get_wxglcanvas(), HeightProfileSmoothEvent(EVT_GLCANVAS_SMOOTH_LAYER_HEIGHT_PROFILE, m_adaptive_params));
 
@@ -634,6 +638,17 @@ void GLCanvas3D::LayersEditing::adaptive_layer_height_profile(GLCanvas3D& canvas
 {
     this->update_slicing_parameters();
     m_layer_height_profile = layer_height_profile_adaptive(*m_slicing_parameters, *m_model_object, quality_factor, min_adaptive_layer_height, max_adaptive_layer_height);
+    const_cast<ModelObject*>(m_model_object)->layer_height_profile.set(m_layer_height_profile);
+    m_layers_texture.valid = false;
+    canvas.post_event(SimpleEvent(EVT_GLCANVAS_SCHEDULE_BACKGROUND_PROCESS));
+    wxGetApp().obj_list()->update_info_items(last_object_id);
+}
+
+void GLCanvas3D::LayersEditing::snap_to_horizontal_layer_height_profile(GLCanvas3D& canvas)
+{
+    this->update_slicing_parameters();
+    PrintObject::update_layer_height_profile(*m_model_object, *m_slicing_parameters, m_layer_height_profile);
+    m_layer_height_profile = layer_height_profile_snap_to_horizontal(m_layer_height_profile, *m_slicing_parameters, *m_model_object);
     const_cast<ModelObject*>(m_model_object)->layer_height_profile.set(m_layer_height_profile);
     m_layers_texture.valid = false;
     canvas.post_event(SimpleEvent(EVT_GLCANVAS_SCHEDULE_BACKGROUND_PROCESS));
@@ -1089,6 +1104,7 @@ wxDEFINE_EVENT(EVT_GLCANVAS_REDO, SimpleEvent);
 wxDEFINE_EVENT(EVT_GLCANVAS_COLLAPSE_SIDEBAR, SimpleEvent);
 wxDEFINE_EVENT(EVT_GLCANVAS_RESET_LAYER_HEIGHT_PROFILE, SimpleEvent);
 wxDEFINE_EVENT(EVT_GLCANVAS_ADAPTIVE_LAYER_HEIGHT_PROFILE, HeightProfileAdaptiveEvent);
+wxDEFINE_EVENT(EVT_GLCANVAS_SNAP_TO_HORIZONTAL_LAYER_HEIGHT_PROFILE, SimpleEvent);
 wxDEFINE_EVENT(EVT_GLCANVAS_SMOOTH_LAYER_HEIGHT_PROFILE, HeightProfileSmoothEvent);
 wxDEFINE_EVENT(EVT_GLCANVAS_RELOAD_FROM_DISK, SimpleEvent);
 wxDEFINE_EVENT(EVT_GLCANVAS_RENDER_TIMER, wxTimerEvent/*RenderTimerEvent*/);
@@ -1754,6 +1770,14 @@ void GLCanvas3D::adaptive_layer_height_profile(const HeightProfileAdaptiveParams
 {
     wxGetApp().plater()->take_snapshot(_L("Variable layer height - Adaptive"));
     m_layers_editing.adaptive_layer_height_profile(*this, adaptive_params.adaptive_quality, adaptive_params.min_adaptive_layer_height, adaptive_params.max_adaptive_layer_height);
+    m_layers_editing.state = LayersEditing::Completed;
+    m_dirty = true;
+}
+
+void GLCanvas3D::snap_to_horizontal_layer_height_profile()
+{
+    wxGetApp().plater()->take_snapshot(_L("Variable layer height - Snap to horizontal"));
+    m_layers_editing.snap_to_horizontal_layer_height_profile(*this);
     m_layers_editing.state = LayersEditing::Completed;
     m_dirty = true;
 }
