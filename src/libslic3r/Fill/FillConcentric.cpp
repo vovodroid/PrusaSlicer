@@ -59,7 +59,7 @@ void FillConcentric::_fill_surface_single(
     size_t iPathFirst = polylines_out.size();
     Point last_pos(0, 0);
     for (const Polygon &loop : loops) {
-        polylines_out.emplace_back(loop.split_at_index(nearest_point_index(loop.points, last_pos)));
+        polylines_out.emplace_back(loop.split_at_index(rand() % loop.points.size()));
         last_pos = polylines_out.back().last_point();
     }
 
@@ -127,7 +127,7 @@ void FillConcentric::_fill_surface_single(const FillParams              &params,
                 if (const bool extrusion_reverse = params.prefer_clockwise_movements ? !extrusion->is_contour() : extrusion->is_contour(); extrusion_reverse)
                     thick_polyline.reverse();
 
-                thick_polyline.start_at_index(nearest_point_index(thick_polyline.points, last_pos));
+                thick_polyline.start_at_index(rand() % thick_polyline.points.size());
             }
 
             thick_polylines_out.emplace_back(std::move(thick_polyline));
