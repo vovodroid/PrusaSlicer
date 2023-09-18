@@ -1,3 +1,25 @@
+///|/ Copyright (c) Prusa Research 2016 - 2023 Lukáš Matěna @lukasmatena, Tomáš Mészáros @tamasmeszaros, Enrico Turri @enricoturri1966, Vojtěch Bubník @bubnikv, Pavel Mikuš @Godrak, Oleksandra Iushchenko @YuSanka, Lukáš Hejl @hejllukas, Filip Sykala @Jony01, Roman Beránek @zavorka, David Kocík @kocikdav
+///|/ Copyright (c) BambuStudio 2023 manch1n @manch1n
+///|/ Copyright (c) SuperSlicer 2023 Remi Durand @supermerill
+///|/ Copyright (c) 2021 Martin Budden
+///|/ Copyright (c) 2020 Paul Arden @ardenpm
+///|/ Copyright (c) 2019 Thomas Moore
+///|/ Copyright (c) 2019 Bryan Smith
+///|/ Copyright (c) Slic3r 2013 - 2016 Alessandro Ranellucci @alranel
+///|/ Copyright (c) 2014 Petr Ledvina @ledvinap
+///|/
+///|/ ported from lib/Slic3r/Print.pm:
+///|/ Copyright (c) Prusa Research 2016 - 2018 Vojtěch Bubník @bubnikv, Tomáš Mészáros @tamasmeszaros
+///|/ Copyright (c) Slic3r 2011 - 2016 Alessandro Ranellucci @alranel
+///|/ Copyright (c) 2012 - 2013 Mark Hindess
+///|/ Copyright (c) 2013 Devin Grady
+///|/ Copyright (c) 2012 - 2013 Mike Sheldrake @mesheldrake
+///|/ Copyright (c) 2012 Henrik Brix Andersen @henrikbrixandersen
+///|/ Copyright (c) 2012 Michael Moon
+///|/ Copyright (c) 2011 Richard Goodwin
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #include "Exception.hpp"
 #include "Print.hpp"
 #include "BoundingBox.hpp"
@@ -117,6 +139,7 @@ bool Print::invalidate_state_by_config_options(const ConfigOptionResolver & /* n
         "perimeter_acceleration",
         "post_process",
         "gcode_substitutions",
+        "gcode_binary",
         "printer_notes",
         "retract_before_travel",
         "retract_before_wipe",
@@ -667,7 +690,7 @@ std::string Print::validate(std::vector<std::string>* warnings) const
 //        	double extrusion_width_min = config.get_abs_value(opt_key, min_nozzle_diameter);
 //        	double extrusion_width_max = config.get_abs_value(opt_key, max_nozzle_diameter);
             double extrusion_width_min = config.get_abs_value(opt_key, layer_height);
-            double extrusion_width_max = config.get_abs_value(opt_key, layer_height);
+            double extrusion_width_max = extrusion_width_min;
         	if (extrusion_width_min == 0) {
         		// Default "auto-generated" extrusion width is always valid.
         	} else if (extrusion_width_min <= layer_height) {
@@ -700,6 +723,17 @@ std::string Print::validate(std::vector<std::string>* warnings) const
     						return _u8L("The Wipe Tower currently supports the non-soluble supports only if they are printed with the current extruder without triggering a tool change. "
     							     "(both support_material_extruder and support_material_interface_extruder need to be set to 0).");
     				}
+                }
+                if (object->config().support_material_style == smsOrganic) {
+                    float extrusion_width = std::min(
+                        support_material_flow(object).width(),
+                        support_material_interface_flow(object).width());
+                    if (object->config().support_tree_tip_diameter < extrusion_width - EPSILON)
+                        return _u8L("Organic support tree tip diameter must not be smaller than support material extrusion width.");
+                    if (object->config().support_tree_branch_diameter < 2. * extrusion_width - EPSILON)
+                        return _u8L("Organic support branch diameter must not be smaller than 2x support material extrusion width.");
+                    if (object->config().support_tree_branch_diameter < object->config().support_tree_tip_diameter)
+                        return _u8L("Organic support branch diameter must not be smaller than support tree tip diameter.");
                 }
             }
 
@@ -921,8 +955,10 @@ void Print::process()
 
     tbb::parallel_for(tbb::blocked_range<size_t>(0, m_objects.size(), 1), [this](const tbb::blocked_range<size_t> &range) {
         for (size_t idx = range.begin(); idx < range.end(); ++idx) {
-            m_objects[idx]->generate_support_material();
-            m_objects[idx]->estimate_curled_extrusions();
+            PrintObject &obj = *m_objects[idx];
+            obj.generate_support_material();
+            obj.estimate_curled_extrusions();
+            obj.calculate_overhanging_perimeters();
         }
     }, tbb::simple_partitioner());
 
@@ -1009,8 +1045,48 @@ std::string Print::export_gcode(const std::string& path_template, GCodeProcessor
     this->set_status(90, message);
 
     // Create GCode on heap, it has quite a lot of data.
-    std::unique_ptr<GCode> gcode(new GCode);
+    std::unique_ptr<GCodeGenerator> gcode(new GCodeGenerator);
     gcode->do_export(this, path.c_str(), result, thumbnail_cb);
+
+
+#if GET_CUSTOM_GCODE_PLACEHOLDERS
+
+    const std::string dir = custom_gcodes_dir() +
+#ifdef _WIN32
+    "\\";
+#else
+    "/";
+#endif
+
+    auto save_placeholders = [dir](const std::string& file_name, const DynamicConfig& config) {
+        try {
+            boost::nowide::ofstream c;
+            c.open(dir + file_name, std::ios::out | std::ios::trunc);
+            c << "# " << header_slic3r_generated() << std::endl;
+            auto keys = config.keys();
+            for (const std::string& opt_key : keys) {
+                const std::string type = std::to_string(int(config.optptr(opt_key)->type()));
+                c << opt_key << " = " << type << std::endl;
+            }
+            c.close();
+        }
+        catch (const std::ofstream::failure& err) {
+            throw RuntimeError(format("The %1% cannot be loaded:\n\tReason: %2%", file_name, err.what()));
+        }
+    };
+
+    // save specific placeholders
+    const auto& gcode_placeholders = gcode->get_g_code_placeholders_map();
+    for (const auto& [gcode_name, config] : gcode_placeholders)
+        save_placeholders(gcode_name, config);
+
+    // save universal placeholders
+    save_placeholders("universal", gcode->get_placeholder_parser_config());
+
+    // save placeholders for "rw_slicing_state" slicing state
+    save_placeholders("rw_slicing_state", gcode->get_placeholder_output_config());
+
+#endif
 
     if (m_conflict_result.has_value())
         result->conflict_result = *m_conflict_result;
@@ -1125,13 +1201,15 @@ void Print::_make_skirt()
         }
         // Extrude the skirt loop.
         ExtrusionLoop eloop(elrSkirt);
-        eloop.paths.emplace_back(ExtrusionPath(
-            ExtrusionPath(
+        eloop.paths.emplace_back(
+            ExtrusionAttributes{
                 ExtrusionRole::Skirt,
-                (float)mm3_per_mm,         // this will be overridden at G-code export time
-                flow.width(),
-				(float)first_layer_height  // this will be overridden at G-code export time
-            )));
+                ExtrusionFlow{
+                    float(mm3_per_mm),        // this will be overridden at G-code export time
+                    flow.width(),
+                    float(first_layer_height) // this will be overridden at G-code export time
+                }
+            });
         eloop.paths.back().polyline = loop.split_at_first_point();
         m_skirt.append(eloop);
         if (m_config.min_skirt_length.value > 0) {
@@ -1557,6 +1635,26 @@ std::string Print::output_filename(const std::string &filename_base) const
     return this->PrintBase::output_filename(m_config.output_filename_format.value, ".gcode", filename_base, &config);
 }
 
+const std::string PrintStatistics::FilamentUsedG     = "filament used [g]";
+const std::string PrintStatistics::FilamentUsedGMask = "; filament used [g] =";
+
+const std::string PrintStatistics::TotalFilamentUsedG          = "total filament used [g]";
+const std::string PrintStatistics::TotalFilamentUsedGMask      = "; total filament used [g] =";
+const std::string PrintStatistics::TotalFilamentUsedGValueMask = "; total filament used [g] = %.2lf\n";
+
+const std::string PrintStatistics::FilamentUsedCm3     = "filament used [cm3]";
+const std::string PrintStatistics::FilamentUsedCm3Mask = "; filament used [cm3] =";
+
+const std::string PrintStatistics::FilamentUsedMm     = "filament used [mm]";
+const std::string PrintStatistics::FilamentUsedMmMask = "; filament used [mm] =";
+
+const std::string PrintStatistics::FilamentCost     = "filament cost";
+const std::string PrintStatistics::FilamentCostMask = "; filament cost =";
+
+const std::string PrintStatistics::TotalFilamentCost          = "total filament cost";
+const std::string PrintStatistics::TotalFilamentCostMask      = "; total filament cost =";
+const std::string PrintStatistics::TotalFilamentCostValueMask = "; total filament cost = %.2lf\n";
+
 DynamicConfig PrintStatistics::config() const
 {
     DynamicConfig config;
@@ -1637,8 +1735,8 @@ std::string PrintStatistics::finalize_output_path(const std::string &path_in) co
             }
 
 
-            ExtrusionPath path(ExtrusionRole::WipeTower, 0.0, 0.0, lh);
-            path.polyline = { minCorner, {maxCorner.x(), minCorner.y()}, maxCorner, {minCorner.x(), maxCorner.y()}, minCorner };
+            ExtrusionPath path({ minCorner, {maxCorner.x(), minCorner.y()}, maxCorner, {minCorner.x(), maxCorner.y()}, minCorner },
+                ExtrusionAttributes{ ExtrusionRole::WipeTower, ExtrusionFlow{ 0.0, 0.0, lh } });
             paths.push_back({ path });
 
             // We added the border, now add several parallel lines so we can detect an object that is fully inside the tower.

@@ -1,3 +1,8 @@
+///|/ Copyright (c) Prusa Research 2016 - 2023 Oleksandra Iushchenko @YuSanka, Vojtěch Bubník @bubnikv, Filip Sykala @Jony01, David Kocík @kocikdav, Enrico Turri @enricoturri1966, Tomáš Mészáros @tamasmeszaros, Lukáš Matěna @lukasmatena, Vojtěch Král @vojtechkral
+///|/ Copyright (c) 2019 Sijmen Schoon
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #ifndef slic3r_Utils_hpp_
 #define slic3r_Utils_hpp_
 
@@ -52,6 +57,11 @@ const std::string& sys_shapes_dir();
 
 // Return a full path to the custom shapes gallery directory.
 std::string custom_shapes_dir();
+
+// Set a path with shapes gallery files.
+void set_custom_gcodes_dir(const std::string &path);
+// Return a full path to the system shapes gallery directory.
+const std::string& custom_gcodes_dir();
 
 // Set a path with preset files.
 void set_data_dir(const std::string &path);

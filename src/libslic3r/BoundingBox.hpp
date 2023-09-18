@@ -1,3 +1,8 @@
+///|/ Copyright (c) Prusa Research 2016 - 2023 Tomáš Mészáros @tamasmeszaros, Vojtěch Bubník @bubnikv, Filip Sykala @Jony01, Enrico Turri @enricoturri1966
+///|/ Copyright (c) Slic3r 2014 - 2015 Alessandro Ranellucci @alranel
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #ifndef slic3r_BoundingBox_hpp_
 #define slic3r_BoundingBox_hpp_
 
@@ -68,7 +73,9 @@ private:
     template<bool IncludeBoundary = false, class BoundingBoxType, class It, class = IteratorOnly<It>>
     static void construct(BoundingBoxType &out, It from, It to)
     {
-        if (from != to) {
+        if (from == to) {
+            out.defined = false;
+        } else {
             auto it = from;
             out.min = it->template cast<typename PointType::Scalar>();
             out.max = out.min;

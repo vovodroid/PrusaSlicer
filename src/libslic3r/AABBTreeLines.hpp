@@ -1,3 +1,7 @@
+///|/ Copyright (c) Prusa Research 2022 - 2023 Pavel Mikuš @Godrak
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #ifndef SRC_LIBSLIC3R_AABBTREELINES_HPP_
 #define SRC_LIBSLIC3R_AABBTREELINES_HPP_
 
@@ -345,7 +349,7 @@ public:
         return dist;
     }
 
-    std::vector<size_t> all_lines_in_radius(const Vec<2, Scalar> &point, Floating radius)
+    std::vector<size_t> all_lines_in_radius(const Vec<2, Scalar> &point, Floating radius) const
     {
         return AABBTreeLines::all_lines_in_radius(this->lines, this->tree, point.template cast<Floating>(), radius * radius);
     }

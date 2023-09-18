@@ -1,3 +1,9 @@
+///|/ Copyright (c) Prusa Research 2018 - 2023 Vojtěch Bubník @bubnikv, Enrico Turri @enricoturri1966, Oleksandra Iushchenko @YuSanka, Filip Sykala @Jony01, Lukáš Matěna @lukasmatena, David Kocík @kocikdav, Vojtěch Král @vojtechkral
+///|/ Copyright (c) BambuStudio 2023 manch1n @manch1n
+///|/ Copyright (c) 2019 BeldrothTheGold @BeldrothTheGold
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #ifndef _prusaslicer_technologies_h_
 #define _prusaslicer_technologies_h_
 
@@ -52,14 +58,7 @@
 // Enable OpenGL debug messages using debug context
 #define ENABLE_OPENGL_DEBUG_OPTION (1 && ENABLE_GL_CORE_PROFILE)
 
-
-//====================
-// 2.6.0.alpha1 techs
-//====================
-#define ENABLE_2_6_0_ALPHA1 1
-
-// Enable alternative version of file_wildcards()
-#define ENABLE_ALTERNATIVE_FILE_WILDCARDS_GENERATOR (1 && ENABLE_2_6_0_ALPHA1)
-
+// Enable imgui dialog which allows to set the parameters used to export binarized gcode
+#define ENABLE_BINARIZED_GCODE_DEBUG_WINDOW 0
 
 #endif // _prusaslicer_technologies_h_

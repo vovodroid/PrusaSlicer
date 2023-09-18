@@ -1,3 +1,24 @@
+///|/ Copyright (c) Prusa Research 2016 - 2023 Vojtěch Bubník @bubnikv, Lukáš Matěna @lukasmatena, Lukáš Hejl @hejllukas, Tomáš Mészáros @tamasmeszaros, Oleksandra Iushchenko @YuSanka, Pavel Mikuš @Godrak, David Kocík @kocikdav, Enrico Turri @enricoturri1966, Filip Sykala @Jony01, Vojtěch Král @vojtechkral
+///|/ Copyright (c) 2023 Pedro Lamas @PedroLamas
+///|/ Copyright (c) 2023 Mimoja @Mimoja
+///|/ Copyright (c) 2020 - 2021 Sergey Kovalev @RandoMan70
+///|/ Copyright (c) 2021 Niall Sheridan @nsheridan
+///|/ Copyright (c) 2021 Martin Budden
+///|/ Copyright (c) 2021 Ilya @xorza
+///|/ Copyright (c) 2020 Paul Arden @ardenpm
+///|/ Copyright (c) 2020 rongith
+///|/ Copyright (c) 2019 Spencer Owen @spuder
+///|/ Copyright (c) 2019 Stephan Reichhelm @stephanr
+///|/ Copyright (c) 2018 Martin Loidl @LoidlM
+///|/ Copyright (c) SuperSlicer 2018 Remi Durand @supermerill
+///|/ Copyright (c) 2016 - 2017 Joseph Lenox @lordofhyphens
+///|/ Copyright (c) Slic3r 2013 - 2016 Alessandro Ranellucci @alranel
+///|/ Copyright (c) 2016 Vanessa Ezekowitz @VanessaE
+///|/ Copyright (c) 2015 Alexander Rössler @machinekoder
+///|/ Copyright (c) 2014 Petr Ledvina @ledvinap
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #include "PrintConfig.hpp"
 #include "Config.hpp"
 #include "I18N.hpp"
@@ -33,6 +54,13 @@ static t_config_enum_names enum_names_from_keys_map(const t_config_enum_values &
     static t_config_enum_names s_keys_names_##NAME = enum_names_from_keys_map(s_keys_map_##NAME); \
     template<> const t_config_enum_values& ConfigOptionEnum<NAME>::get_enum_values() { return s_keys_map_##NAME; } \
     template<> const t_config_enum_names& ConfigOptionEnum<NAME>::get_enum_names() { return s_keys_names_##NAME; }
+
+static const t_config_enum_values s_keys_map_ArcFittingType {
+    { "disabled",       int(ArcFittingType::Disabled) },
+    { "emit_center",    int(ArcFittingType::EmitCenter) },
+    { "emit_radius",    int(ArcFittingType::EmitRadius) }
+};
+CONFIG_OPTION_ENUM_DEFINE_STATIC_MAPS(ArcFittingType)
 
 static t_config_enum_values s_keys_map_PrinterTechnology {
     { "FFF",            ptFFF },
@@ -278,12 +306,12 @@ void PrintConfigDef::init_common_params()
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionFloat(0.));
 
-    def = this->add("thumbnails", coPoints);
+    def = this->add("thumbnails", coString);
     def->label = L("G-code thumbnails");
-    def->tooltip = L("Picture sizes to be stored into a .gcode and .sl1 / .sl1s files, in the following format: \"XxY, XxY, ...\"");
+    def->tooltip = L("Picture sizes to be stored into a .gcode and .sl1 / .sl1s files, in the following format: \"XxYxEXT, XxYxEXT, ...\"");
     def->mode = comExpert;
     def->gui_type = ConfigOptionDef::GUIType::one_string;
-    def->set_default_value(new ConfigOptionPoints());
+    def->set_default_value(new ConfigOptionString());
 
     def = this->add("thumbnails_format", coEnum);
     def->label = L("Format of G-code thumbnails");
@@ -396,6 +424,27 @@ void PrintConfigDef::init_common_params()
 void PrintConfigDef::init_fff_params()
 {
     ConfigOptionDef* def;
+
+    def = this->add("arc_fitting", coEnum);
+    def->label = L("Arc fitting");
+    def->tooltip = L("Enable this to get a G-code file which has G2 and G3 moves. "
+                     "And the fitting tolerance is same with resolution");
+    def->set_enum<ArcFittingType>({
+        { "disabled",       "Disabled" },
+        { "emit_center",    "Enabled: G2/3 I J" },
+        { "emit_radius",    "Enabled: G2/3 R" }
+    });
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionEnum<ArcFittingType>(ArcFittingType::Disabled));
+
+    def = this->add("arc_fitting_tolerance", coFloatOrPercent);
+    def->label = L("Arc fitting tolerance");
+    def->sidetext = L("mm or %");
+    def->tooltip = L("When using the arc_fitting option, allow the curve to deviate a cetain % from the collection of strait paths.\n"
+                     "Can be a mm value or a percentage of the current extrusion width.");
+    def->mode = comAdvanced;
+    def->min = 0;
+    def->set_default_value(new ConfigOptionFloatOrPercent(5, true));
 
     // Maximum extruder temperature, bumped to 1500 to support printing of glass.
     const int max_temp = 1500;
@@ -1474,6 +1523,12 @@ void PrintConfigDef::init_fff_params()
     def->tooltip = L("Find / replace patterns in G-code lines and substitute them.");
     def->mode = comExpert;
     def->set_default_value(new ConfigOptionStrings());
+
+    def = this->add("gcode_binary", coBool);
+    def->label = L("Export as binary G-code");
+    def->tooltip = L("Exports G-code in binary format.");
+    def->mode = comExpert;
+    def->set_default_value(new ConfigOptionBool(0));
 
     def = this->add("high_current_on_filament_swap", coBool);
     def->label = L("High extruder current on filament swap");
@@ -3059,18 +3114,6 @@ void PrintConfigDef::init_fff_params()
                    "to collapse them into a single trace).");
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionBool(true));
-
-    def = this->add("threads", coInt);
-    def->label = L("Threads");
-    def->tooltip = L("Threads are used to parallelize long-running tasks. Optimal threads number "
-                   "is slightly above the number of available cores/processors.");
-    def->readonly = true;
-    def->min = 1;
-    {
-        int threads = (unsigned int)boost::thread::hardware_concurrency();
-        def->set_default_value(new ConfigOptionInt(threads > 0 ? threads : 2));
-        def->cli = ConfigOptionDef::nocli;
-    }
 
     def = this->add("toolchange_gcode", coString);
     def->label = L("Tool change G-code");

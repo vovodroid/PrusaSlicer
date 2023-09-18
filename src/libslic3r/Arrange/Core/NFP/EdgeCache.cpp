@@ -1,3 +1,7 @@
+///|/ Copyright (c) Prusa Research 2023 Tomáš Mészáros @tamasmeszaros
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #include "EdgeCache.hpp"
 #include "CircularEdgeIterator.hpp"
 
@@ -30,6 +34,9 @@ void EdgeCache::sample_contour(double accuracy, std::vector<ContourLocation> &sa
     const auto N = m_contour.distances.size();
     const auto S = stride(N, accuracy);
 
+    if (N == 0 || S == 0)
+        return;
+
     samples.reserve(N / S + 1);
     for(size_t i = 0; i < N; i += S) {
         samples.emplace_back(
@@ -41,6 +48,10 @@ void EdgeCache::sample_contour(double accuracy, std::vector<ContourLocation> &sa
 
         const auto NH = hc.distances.size();
         const auto SH = stride(NH, accuracy);
+
+        if (NH == 0 || SH == 0)
+            continue;
+
         samples.reserve(samples.size() + NH / SH + 1);
         for (size_t i = 0; i < NH; i += SH) {
             samples.emplace_back(

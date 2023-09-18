@@ -1,3 +1,9 @@
+///|/ Copyright (c) Prusa Research 2016 - 2023 Pavel Mikuš @Godrak, Oleksandra Iushchenko @YuSanka, Vojtěch Bubník @bubnikv, Lukáš Matěna @lukasmatena, Filip Sykala @Jony01, David Kocík @kocikdav, Roman Beránek @zavorka, Enrico Turri @enricoturri1966, Tomáš Mészáros @tamasmeszaros, Vojtěch Král @vojtechkral
+///|/ Copyright (c) 2021 Justin Schuh @jschuh
+///|/ Copyright (c) Slic3r 2013 - 2015 Alessandro Ranellucci @alranel
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #include "Utils.hpp"
 #include "I18N.hpp"
 
@@ -191,6 +197,18 @@ void set_sys_shapes_dir(const std::string &dir)
 const std::string& sys_shapes_dir()
 {
 	return g_sys_shapes_dir;
+}
+
+static std::string g_custom_gcodes_dir;
+
+void set_custom_gcodes_dir(const std::string &dir)
+{
+    g_custom_gcodes_dir = dir;
+}
+
+const std::string& custom_gcodes_dir()
+{
+    return g_custom_gcodes_dir;
 }
 
 // Translate function callback, to call wxWidgets translate function to convert non-localized UTF8 string to a localized one.
@@ -780,8 +798,9 @@ bool is_idx_file(const boost::filesystem::directory_entry &dir_entry)
 
 bool is_gcode_file(const std::string &path)
 {
-	return boost::iends_with(path, ".gcode") || boost::iends_with(path, ".gco") ||
-		   boost::iends_with(path, ".g")     || boost::iends_with(path, ".ngc");
+		return boost::iends_with(path, ".gcode") || boost::iends_with(path, ".gco") ||
+					 boost::iends_with(path, ".g") || boost::iends_with(path, ".ngc") ||
+					 boost::iends_with(path, ".bgcode") || boost::iends_with(path, ".bgc");
 }
 
 bool is_img_file(const std::string &path)

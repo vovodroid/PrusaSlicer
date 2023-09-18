@@ -1,3 +1,7 @@
+///|/ Copyright (c) Prusa Research 2018 - 2023 Vojtěch Bubník @bubnikv, Lukáš Hejl @hejllukas, Oleksandra Iushchenko @YuSanka, Enrico Turri @enricoturri1966, Lukáš Matěna @lukasmatena, Vojtěch Král @vojtechkral
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #include <numeric>
 #include <algorithm>
 #include <thread>
@@ -841,7 +845,7 @@ FirmwareDialog::FirmwareDialog(wxWindow *parent) :
 	grid->Add(port_sizer, 0, wxEXPAND);
 
 	grid->Add(label_progress, 0, wxALIGN_CENTER_VERTICAL);
-	grid->Add(p->progressbar, 1, wxEXPAND | wxALIGN_CENTER_VERTICAL);
+	grid->Add(p->progressbar, 1, wxEXPAND);
 
 	grid->Add(label_status, 0, wxALIGN_CENTER_VERTICAL);
 	grid->Add(p->txt_status, 0, wxEXPAND);

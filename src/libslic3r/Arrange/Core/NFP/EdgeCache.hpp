@@ -1,3 +1,7 @@
+///|/ Copyright (c) Prusa Research 2023 Tomáš Mészáros @tamasmeszaros
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #ifndef EDGECACHE_HPP
 #define EDGECACHE_HPP
 
@@ -48,8 +52,9 @@ public:
     // when fetching corners.
     static inline size_t stride(const size_t N, double accuracy)
     {
+        size_t n = std::max(size_t{1}, N);
         return static_cast<coord_t>(
-            std::round(N / std::pow(N, std::pow(accuracy, 1./3.)))
+            std::round(N / std::pow(n, std::pow(accuracy, 1./3.)))
             );
     }
 

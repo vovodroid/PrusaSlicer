@@ -1,3 +1,9 @@
+///|/ Copyright (c) Prusa Research 2017 - 2023 Oleksandra Iushchenko @YuSanka, David Kocík @kocikdav, Enrico Turri @enricoturri1966, Lukáš Matěna @lukasmatena, Vojtěch Bubník @bubnikv, Vojtěch Král @vojtechkral
+///|/ Copyright (c) SuperSlicer 2021 Remi Durand @supermerill
+///|/ Copyright (c) 2019 John Drake @foxox
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #include <cassert>
 
 #include "libslic3r.h"
@@ -22,6 +28,7 @@
 #include <boost/locale.hpp>
 #include <boost/log/trivial.hpp>
 
+#include <LibBGCode/core/core.hpp>
 
 // Store the print/filament/printer presets into a "presets" subdirectory of the Slic3rPE config dir.
 // This breaks compatibility with the upstream Slic3r if the --datadir is used to switch between the two versions.
@@ -877,14 +884,22 @@ DynamicPrintConfig PresetBundle::full_sla_config() const
 // If the file is loaded successfully, its print / filament / printer profiles will be activated.
 ConfigSubstitutions PresetBundle::load_config_file(const std::string &path, ForwardCompatibilitySubstitutionRule compatibility_rule)
 {
-	if (is_gcode_file(path)) {
-		DynamicPrintConfig config;
-		config.apply(FullPrintConfig::defaults());
-        ConfigSubstitutions config_substitutions = config.load_from_gcode_file(path, compatibility_rule);
+    if (is_gcode_file(path)) {
+        FILE* file = boost::nowide::fopen(path.c_str(), "rb");
+        if (file == nullptr)
+            throw Slic3r::RuntimeError(format("Error opening file %1%", path));
+        std::vector<uint8_t> cs_buffer(65536);
+        const bool is_binary = bgcode::core::is_valid_binary_gcode(*file, true, cs_buffer.data(), cs_buffer.size()) == bgcode::core::EResult::Success;
+        fclose(file);
+
+        DynamicPrintConfig config;
+        config.apply(FullPrintConfig::defaults());
+        ConfigSubstitutions config_substitutions = is_binary ? config.load_from_binary_gcode_file(path, compatibility_rule) :
+            config.load_from_gcode_file(path, compatibility_rule);
         Preset::normalize(config);
-		load_config_file_config(path, true, std::move(config));
-		return config_substitutions;
-	}
+        load_config_file_config(path, true, std::move(config));
+        return config_substitutions;
+    }
 
     // 1) Try to load the config file into a boost property tree.
     boost::property_tree::ptree tree;
@@ -1046,11 +1061,8 @@ void PresetBundle::load_config_file_config(const std::string &name_or_path, bool
             }
             // Load the configs into this->filaments and make them active.
             std::vector<std::string> extr_names = std::vector<std::string>(configs.size());
-            // To avoid incorrect selection of the first filament preset (means a value of Preset->m_idx_selected) 
-            // in a case when next added preset take a place of previosly selected preset,
-            // we should add presets from last to first
             bool any_modified = false;
-            for (int i = (int)configs.size()-1; i >= 0; i--) {
+            for (int i = 0; i < (int)configs.size(); i++) {
                 DynamicPrintConfig &cfg = configs[i];
                 // Split the "compatible_printers_condition" and "inherits" from the cummulative vectors to separate filament presets.
                 cfg.opt_string("compatible_printers_condition", true) = compatible_printers_condition_values[i + 1];
@@ -1059,15 +1071,18 @@ void PresetBundle::load_config_file_config(const std::string &name_or_path, bool
                 // Load all filament presets, but only select the first one in the preset dialog.
                 auto [loaded, modified] = this->filaments.load_external_preset(name_or_path, name,
                     (i < int(old_filament_profile_names->values.size())) ? old_filament_profile_names->values[i] : "",
-                    std::move(cfg), 
-                    i == 0 ? 
-                        PresetCollection::LoadAndSelect::Always : 
-                    any_modified ?
-                        PresetCollection::LoadAndSelect::Never :
-                        PresetCollection::LoadAndSelect::OnlyIfModified);
+                    std::move(cfg),
+                    any_modified ? PresetCollection::LoadAndSelect::Never : 
+                                   PresetCollection::LoadAndSelect::OnlyIfModified);
                 any_modified |= modified;
                 extr_names[i] = loaded->name;
             }
+
+            // Check if some preset was selected after loading from config file.
+            // ! Selected preset name is always the same as name of edited preset, if selection was applied
+            if (this->filaments.get_selected_preset_name() != this->filaments.get_edited_preset().name)
+                this->filaments.select_preset_by_name(extr_names[0], true);
+
             // create extruders_filaments only when all filaments are loaded
             for (size_t id = 0; id < extr_names.size(); ++id)
                 this->extruders_filaments.emplace_back(ExtruderFilaments(&filaments, id, extr_names[id]));
@@ -1806,7 +1821,21 @@ void PresetBundle::update_filaments_compatible(PresetSelectCompatibleType select
     else
         update_filament_compatible(extruder_idx);
 
-    if (this->filaments.get_idx_selected() == size_t(-1))
+    // validate selection in filaments
+    bool invalid_selection = this->filaments.get_idx_selected() == size_t(-1);
+    if (!invalid_selection) {
+        invalid_selection = true;
+        const std::string selected_filament_name = this->filaments.get_selected_preset_name();
+        for (const auto& extruder : extruders_filaments)
+            if (const std::string& selected_extr_filament_name = extruder.get_selected_preset_name();
+                selected_extr_filament_name == selected_filament_name) {
+                invalid_selection = false;
+                break;
+            }
+    }
+
+    // select valid filament from first extruder
+    if (invalid_selection)
         this->filaments.select_preset(extruders_filaments[0].get_selected_idx());
 }
 

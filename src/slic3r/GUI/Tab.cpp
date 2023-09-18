@@ -1,3 +1,22 @@
+///|/ Copyright (c) Prusa Research 2017 - 2023 Oleksandra Iushchenko @YuSanka, Lukáš Matěna @lukasmatena, Lukáš Hejl @hejllukas, Vojtěch Bubník @bubnikv, Pavel Mikuš @Godrak, Tomáš Mészáros @tamasmeszaros, David Kocík @kocikdav, Enrico Turri @enricoturri1966, Vojtěch Král @vojtechkral
+///|/ Copyright (c) 2021 Martin Budden
+///|/ Copyright (c) 2021 Ilya @xorza
+///|/ Copyright (c) 2019 John Drake @foxox
+///|/ Copyright (c) 2019 Matthias Urlichs @smurfix
+///|/ Copyright (c) 2019 Thomas Moore
+///|/ Copyright (c) 2019 Sijmen Schoon
+///|/ Copyright (c) 2018 Martin Loidl @LoidlM
+///|/
+///|/ ported from lib/Slic3r/GUI/Tab.pm:
+///|/ Copyright (c) Prusa Research 2016 - 2018 Vojtěch Bubník @bubnikv, Lukáš Matěna @lukasmatena
+///|/ Copyright (c) 2015 - 2017 Joseph Lenox @lordofhyphens
+///|/ Copyright (c) Slic3r 2012 - 2016 Alessandro Ranellucci @alranel
+///|/ Copyright (c) 2016 Chow Loong Jin @hyperair
+///|/ Copyright (c) 2012 QuantumConcepts
+///|/ Copyright (c) 2012 Henrik Brix Andersen @henrikbrixandersen
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 // #include "libslic3r/GCodeSender.hpp"
 #include "slic3r/GUI/BedShapeDialog.hpp"
 #include "slic3r/Utils/Serial.hpp"
@@ -7,7 +26,7 @@
 #include "libslic3r/Utils.hpp"
 #include "libslic3r/Model.hpp"
 #include "libslic3r/GCode/GCodeProcessor.hpp"
-#include "libslic3r/GCodeWriter.hpp"
+#include "libslic3r/GCode/GCodeWriter.hpp"
 
 #include "slic3r/Utils/Http.hpp"
 #include "slic3r/Utils/PrintHost.hpp"
@@ -45,6 +64,7 @@
 #include "format.hpp"
 #include "UnsavedChangesDialog.hpp"
 #include "SavePresetDialog.hpp"
+#include "EditGCodeDialog.hpp"
 #include "MsgDialog.hpp"
 #include "Notebook.hpp"
 
@@ -188,6 +208,8 @@ void Tab::create_preset_tab()
     // Bitmaps to be shown on the "Undo user changes" button next to each input field.
     add_scaled_bitmap(this, m_bmp_value_revert, "undo");
     add_scaled_bitmap(this, m_bmp_white_bullet, "dot");
+    // Bitmap to be shown on the "edit" button before to each editable input field.
+    add_scaled_bitmap(this, m_bmp_edit_value, "edit");
 
     fill_icon_descriptions();
     set_tooltips_text();
@@ -217,7 +239,7 @@ void Tab::create_preset_tab()
 
     const float scale_factor = em_unit(this)*0.1;// GetContentScaleFactor();
     m_top_hsizer = new wxBoxSizer(wxHORIZONTAL);
-    sizer->Add(m_top_hsizer, 0, wxEXPAND | wxBOTTOM | wxALIGN_CENTER_VERTICAL, 3);
+    sizer->Add(m_top_hsizer, 0, wxEXPAND | wxBOTTOM, 3);
     m_top_hsizer->Add(m_presets_choice, 0, wxLEFT | wxRIGHT | wxTOP | wxALIGN_CENTER_VERTICAL, 3);
     m_top_hsizer->AddSpacer(int(4*scale_factor));
 
@@ -243,7 +265,7 @@ void Tab::create_preset_tab()
     m_h_buttons_sizer->AddSpacer(int(8*scale_factor));
     m_h_buttons_sizer->Add(m_btn_compare_preset, 0, wxALIGN_CENTER_VERTICAL);
 
-    m_top_hsizer->Add(m_h_buttons_sizer, 1, wxEXPAND | wxALIGN_CENTRE_VERTICAL);
+    m_top_hsizer->Add(m_h_buttons_sizer, 1, wxEXPAND);
     m_top_hsizer->AddSpacer(int(16*scale_factor));
     // StretchSpacer has a strange behavior under OSX, so
     // There is used just additional sizer for m_mode_sizer with right alignment
@@ -601,6 +623,10 @@ void Tab::decorate()
         field->set_undo_tooltip(tt);
         field->set_undo_to_sys_tooltip(sys_tt);
         field->set_label_colour(color);
+
+        if (field->has_edit_ui())
+            field->set_edit_bitmap(&m_bmp_edit_value);
+
     }
 
     if (m_active_page)
@@ -635,6 +661,21 @@ void Tab::update_changed_ui()
                 dirty_options.emplace_back("extruders_count");
             if (tab->m_sys_extruders_count != tab->m_extruders_count)
                 nonsys_options.emplace_back("extruders_count");
+        }
+
+        // "thumbnails" can not containe a extentions in old config but are valid and use PNG extention by default
+        // So, check if "thumbnails" is really changed
+        // We will compare full strings for thumnails instead of exactly config values
+        {
+            auto check_thumbnails_option = [](std::vector<std::string>& keys, const DynamicPrintConfig& config, const DynamicPrintConfig& config_new) {
+                if (auto it = std::find(keys.begin(), keys.end(), "thumbnails"); it != keys.end())
+                    if (get_valid_thumbnails_string(config) == get_valid_thumbnails_string(config_new))
+                        // if those strings are actually the same, erase them from the list of dirty oprions
+                        keys.erase(it);
+            };
+            check_thumbnails_option(dirty_options, m_presets->get_edited_preset().config, m_presets->get_selected_preset().config);
+            if (const Preset* parent_preset = m_presets->get_selected_preset_parent())
+                check_thumbnails_option(nonsys_options, m_presets->get_edited_preset().config, parent_preset->config);
         }
     }
 
@@ -1654,6 +1695,8 @@ void TabPrint::build()
         optgroup->append_single_option_line("slicing_mode");
         optgroup->append_single_option_line("resolution");
         optgroup->append_single_option_line("gcode_resolution");
+        optgroup->append_single_option_line("arc_fitting");
+        optgroup->append_single_option_line("arc_fitting_tolerance");
         optgroup->append_single_option_line("xy_size_compensation");
         optgroup->append_single_option_line("elefant_foot_compensation", "elephant-foot-compensation_114487");
 
@@ -1679,6 +1722,34 @@ void TabPrint::build()
         Option option = optgroup->get_option("output_filename_format");
         option.opt.full_width = true;
         optgroup->append_single_option_line(option);
+        optgroup->append_single_option_line("gcode_binary");
+
+        optgroup->m_on_change = [this](const t_config_option_key& opt_key, boost::any value)
+        {
+            if (opt_key == "gcode_binary") {
+                const bool is_binary = m_config->opt_bool("gcode_binary");
+                std::string output_filename_format = m_config->opt_string("output_filename_format");
+                bool modified = false;
+                if (is_binary && boost::iends_with(output_filename_format, ".gcode")) {
+                    output_filename_format = output_filename_format.substr(0, output_filename_format.length() - 5) + "bgcode";
+                    modified = true;
+                }
+                else if (!is_binary && boost::iends_with(output_filename_format, ".bgcode")) {
+                    output_filename_format = output_filename_format.substr(0, output_filename_format.length() - 6) + "gcode";
+                    modified = true;
+                }
+                if (modified) {
+                    DynamicPrintConfig new_conf = *m_config;
+                    auto off_option = static_cast<ConfigOptionString*>(m_config->option("output_filename_format")->clone());
+                    off_option->value = output_filename_format;
+                    new_conf.set_key_value("output_filename_format", off_option);
+                    load_config(new_conf);
+                }
+            }
+
+            update_dirty();
+            update();
+        };
 
         optgroup = page->new_optgroup(L("Other"));
 
@@ -1840,6 +1911,43 @@ static void validate_custom_gcode_cb(Tab* tab, const wxString& title, const t_co
     tab->on_value_change(opt_key, value);
 }
 
+void Tab::edit_custom_gcode(const t_config_option_key& opt_key)
+{
+    EditGCodeDialog dlg = EditGCodeDialog(this, opt_key, get_custom_gcode(opt_key));
+    if (dlg.ShowModal() == wxID_OK) {
+        set_custom_gcode(opt_key, dlg.get_edited_gcode());
+        update_dirty();
+        update();
+    }
+}
+
+const std::string& Tab::get_custom_gcode(const t_config_option_key& opt_key)
+{
+    return m_config->opt_string(opt_key);
+}
+
+void Tab::set_custom_gcode(const t_config_option_key& opt_key, const std::string& value)
+{
+    DynamicPrintConfig new_conf = *m_config;
+    new_conf.set_key_value(opt_key, new ConfigOptionString(value));
+    load_config(new_conf);
+}
+
+const std::string& TabFilament::get_custom_gcode(const t_config_option_key& opt_key)
+{
+    return m_config->opt_string(opt_key, unsigned(0));
+}
+
+void TabFilament::set_custom_gcode(const t_config_option_key& opt_key, const std::string& value)
+{
+    std::vector<std::string> gcodes = static_cast<const ConfigOptionStrings*>(m_config->option(opt_key))->values;
+    gcodes[0] = value;
+
+    DynamicPrintConfig new_conf = *m_config;
+    new_conf.set_key_value(opt_key, new ConfigOptionStrings(gcodes));
+    load_config(new_conf);
+}
+
 void TabFilament::create_line_with_near_label_widget(ConfigOptionsGroupShp optgroup, const std::string& opt_key, int opt_index/* = 0*/)
 {
     Line line {"",""};
@@ -1991,8 +2099,16 @@ void TabFilament::update_extruder_combobox()
             m_extruders_cb->Append(format_wxstr("%1% %2%", _L("Extruder"), id), *get_bmp_bundle("funnel"));
     }
 
-    if (m_active_extruder >= int(extruder_cnt))
+    if (m_active_extruder >= int(extruder_cnt)) {
         m_active_extruder = 0;
+        // update selected and, as a result, editing preset
+        const std::string& preset_name = m_preset_bundle->extruders_filaments[0].get_selected_preset_name();
+        m_presets->select_preset_by_name(preset_name, true);
+
+        // To avoid inconsistance between value of active_extruder in FilamentTab and TabPresetComboBox,
+        // which can causes a crash on switch preset from MM printer to SM printer
+        m_presets_choice->set_active_extruder(m_active_extruder);
+    }
 
     m_extruders_cb->SetSelection(m_active_extruder);
 }
@@ -2167,6 +2283,7 @@ void TabFilament::build()
         optgroup->m_on_change = [this, &optgroup_title = optgroup->title](const t_config_option_key& opt_key, const boost::any& value) {
             validate_custom_gcode_cb(this, optgroup_title, opt_key, value);
         };
+        optgroup->edit_custom_gcode = [this](const t_config_option_key& opt_key) { edit_custom_gcode(opt_key); };
         option = optgroup->get_option("start_filament_gcode");
         option.opt.full_width = true;
         option.opt.is_code = true;
@@ -2177,6 +2294,7 @@ void TabFilament::build()
         optgroup->m_on_change = [this, &optgroup_title = optgroup->title](const t_config_option_key& opt_key, const boost::any& value) {
             validate_custom_gcode_cb(this, optgroup_title, opt_key, value);
         };
+        optgroup->edit_custom_gcode = [this](const t_config_option_key& opt_key) { edit_custom_gcode(opt_key); };
         option = optgroup->get_option("end_filament_gcode");
         option.opt.full_width = true;
         option.opt.is_code = true;
@@ -2322,11 +2440,36 @@ void TabFilament::sys_color_changed()
 
 void TabFilament::load_current_preset()
 {
+    const std::string& selected_filament_name = m_presets->get_selected_preset_name();
+    if (m_active_extruder < 0) {
+        // active extruder was invalidated before load new project file or configuration,
+        // so we have to update active extruder selection from selected filament
+        const std::string& edited_filament_name = m_presets->get_edited_preset().name;
+        assert(!selected_filament_name.empty() && selected_filament_name == edited_filament_name);
+
+        for (int i = 0; i < int(m_preset_bundle->extruders_filaments.size()); i++) {
+            const std::string& selected_extr_filament_name = m_preset_bundle->extruders_filaments[i].get_selected_preset_name();
+            if (selected_extr_filament_name == edited_filament_name) {
+                m_active_extruder = i;
+                break;
+            }
+        }
+        assert(m_active_extruder >= 0);
+
+        m_presets_choice->set_active_extruder(m_active_extruder);
+        if (m_active_extruder != m_extruders_cb->GetSelection())
+            m_extruders_cb->Select(m_active_extruder);
+    }
+
     assert(m_active_extruder >= 0 && m_active_extruder < m_preset_bundle->extruders_filaments.size());
     const std::string& selected_extr_filament_name = m_preset_bundle->extruders_filaments[m_active_extruder].get_selected_preset_name();
-    const std::string& selected_filament_name = m_presets->get_selected_preset_name();
-    if (selected_extr_filament_name != selected_filament_name)
+    if (selected_extr_filament_name != selected_filament_name) {
         m_presets->select_preset_by_name(selected_extr_filament_name, false);
+
+        // To avoid inconsistance between value of active_extruder in FilamentTab and TabPresetComboBox,
+        // which can causes a crash on switch preset from MM printer to SM printer
+        m_presets_choice->set_active_extruder(m_active_extruder);
+    }
 
     Tab::load_current_preset();
 }
@@ -2529,7 +2672,6 @@ void TabPrinter::build_fff()
         option = optgroup->get_option("thumbnails");
         option.opt.full_width = true;
         optgroup->append_single_option_line(option);
-        optgroup->append_single_option_line("thumbnails_format");
 
         optgroup->append_single_option_line("silent_mode");
         optgroup->append_single_option_line("remaining_times");
@@ -2600,6 +2742,7 @@ void TabPrinter::build_fff()
         optgroup->m_on_change = [this, &optgroup_title = optgroup->title](const t_config_option_key& opt_key, const boost::any& value) {
             validate_custom_gcode_cb(this, optgroup_title, opt_key, value);
         };
+        optgroup->edit_custom_gcode = [this](const t_config_option_key& opt_key) { edit_custom_gcode(opt_key); };
         option = optgroup->get_option("start_gcode");
         option.opt.full_width = true;
         option.opt.is_code = true;
@@ -2613,6 +2756,7 @@ void TabPrinter::build_fff()
         optgroup->m_on_change = [this, &optgroup_title = optgroup->title](const t_config_option_key& opt_key, const boost::any& value) {
             validate_custom_gcode_cb(this, optgroup_title, opt_key, value);
         };
+        optgroup->edit_custom_gcode = [this](const t_config_option_key& opt_key) { edit_custom_gcode(opt_key); };
         option = optgroup->get_option("end_gcode");
         option.opt.full_width = true;
         option.opt.is_code = true;
@@ -2623,6 +2767,7 @@ void TabPrinter::build_fff()
         optgroup->m_on_change = [this, &optgroup_title = optgroup->title](const t_config_option_key& opt_key, const boost::any& value) {
             validate_custom_gcode_cb(this, optgroup_title, opt_key, value);
         };
+        optgroup->edit_custom_gcode = [this](const t_config_option_key& opt_key) { edit_custom_gcode(opt_key); };
         option = optgroup->get_option("before_layer_gcode");
         option.opt.full_width = true;
         option.opt.is_code = true;
@@ -2633,6 +2778,7 @@ void TabPrinter::build_fff()
         optgroup->m_on_change = [this, &optgroup_title = optgroup->title](const t_config_option_key& opt_key, const boost::any& value) {
             validate_custom_gcode_cb(this, optgroup_title, opt_key, value);
         };
+        optgroup->edit_custom_gcode = [this](const t_config_option_key& opt_key) { edit_custom_gcode(opt_key); };
         option = optgroup->get_option("layer_gcode");
         option.opt.full_width = true;
         option.opt.is_code = true;
@@ -2643,6 +2789,7 @@ void TabPrinter::build_fff()
         optgroup->m_on_change = [this, &optgroup_title = optgroup->title](const t_config_option_key& opt_key, const boost::any& value) {
             validate_custom_gcode_cb(this, optgroup_title, opt_key, value);
         };
+        optgroup->edit_custom_gcode = [this](const t_config_option_key& opt_key) { edit_custom_gcode(opt_key); };
         option = optgroup->get_option("toolchange_gcode");
         option.opt.full_width = true;
         option.opt.is_code = true;
@@ -2653,6 +2800,7 @@ void TabPrinter::build_fff()
         optgroup->m_on_change = [this, &optgroup_title = optgroup->title](const t_config_option_key& opt_key, const boost::any& value) {
             validate_custom_gcode_cb(this, optgroup_title, opt_key, value);
         };
+        optgroup->edit_custom_gcode = [this](const t_config_option_key& opt_key) { edit_custom_gcode(opt_key); };
         option = optgroup->get_option("between_objects_gcode");
         option.opt.full_width = true;
         option.opt.is_code = true;
@@ -2663,6 +2811,7 @@ void TabPrinter::build_fff()
         optgroup->m_on_change = [this, &optgroup_title = optgroup->title](const t_config_option_key& opt_key, const boost::any& value) {
             validate_custom_gcode_cb(this, optgroup_title, opt_key, value);
         };
+        optgroup->edit_custom_gcode = [this](const t_config_option_key& opt_key) { edit_custom_gcode(opt_key); };
         option = optgroup->get_option("color_change_gcode");
         option.opt.is_code = true;
         option.opt.height = gcode_field_height;//150;
@@ -2672,6 +2821,7 @@ void TabPrinter::build_fff()
         optgroup->m_on_change = [this, &optgroup_title = optgroup->title](const t_config_option_key& opt_key, const boost::any& value) {
             validate_custom_gcode_cb(this, optgroup_title, opt_key, value);
         };
+        optgroup->edit_custom_gcode = [this](const t_config_option_key& opt_key) { edit_custom_gcode(opt_key); };
         option = optgroup->get_option("pause_print_gcode");
         option.opt.is_code = true;
         option.opt.height = gcode_field_height;//150;
@@ -2681,6 +2831,7 @@ void TabPrinter::build_fff()
         optgroup->m_on_change = [this, &optgroup_title = optgroup->title](const t_config_option_key& opt_key, const boost::any& value) {
             validate_custom_gcode_cb(this, optgroup_title, opt_key, value);
         };
+        optgroup->edit_custom_gcode = [this](const t_config_option_key& opt_key) { edit_custom_gcode(opt_key); };
         option = optgroup->get_option("template_custom_gcode");
         option.opt.is_code = true;
         option.opt.height = gcode_field_height;//150;
@@ -3644,8 +3795,17 @@ bool Tab::select_preset(std::string preset_name, bool delete_current /*=false*/,
             for (PresetUpdate &pu : updates) {
                 pu.old_preset_dirty = (old_printer_technology == pu.technology) && pu.presets->current_is_dirty();
                 pu.new_preset_compatible = (new_printer_technology == pu.technology) && is_compatible_with_printer(pu.presets->get_edited_preset_with_vendor_profile(), new_printer_preset_with_vendor_profile);
+                bool force_update_edited_preset = false;
+                if (pu.tab_type == Preset::TYPE_FILAMENT && pu.new_preset_compatible) {
+                    // check if edited preset will be still correct after selection new printer 
+                    const int active_extruder    = dynamic_cast<const TabFilament*>(wxGetApp().get_tab(Preset::TYPE_FILAMENT))->get_active_extruder();
+                    const int extruder_count_new = int(dynamic_cast<const ConfigOptionFloats*>(new_printer_preset.config.option("nozzle_diameter"))->size());
+                    // if active_extruder is bigger than extruders_count,
+                    // then it means that edited filament preset will be changed and we have to check this changes
+                    force_update_edited_preset = active_extruder >= extruder_count_new;
+                }
                 if (!canceled)
-                    canceled = pu.old_preset_dirty && !pu.new_preset_compatible && !may_discard_current_dirty_preset(pu.presets, preset_name);
+                    canceled = pu.old_preset_dirty && (!pu.new_preset_compatible || force_update_edited_preset) && !may_discard_current_dirty_preset(pu.presets, preset_name);
             }
             if (!canceled) {
                 for (PresetUpdate &pu : updates) {
@@ -4111,7 +4271,7 @@ void Tab::rename_preset()
     if (dlg.ShowModal() != wxID_OK)
         return;
 
-    const std::string new_name = into_u8(dlg.get_name());
+    const std::string new_name = dlg.get_name();
     if (new_name.empty() || new_name == m_presets->get_selected_preset().name)
         return;
 
@@ -4808,6 +4968,13 @@ void Tab::fill_icon_descriptions()
 
     m_icon_descriptions.emplace_back(&m_bmp_value_revert, L("BACK ARROW"),
         // TRN Description for "BACK ARROW"
+        L("indicates that the settings were changed and are not equal to the last saved preset for "
+        "the current option group.\n"
+        "Click the BACK ARROW icon to reset all settings for the current option group to "
+        "the last saved preset."));
+
+    m_icon_descriptions.emplace_back(&m_bmp_edit_value, L("EDIT VALUE"),
+        // TRN Description for "EDIT VALUE"
         L("indicates that the settings were changed and are not equal to the last saved preset for "
         "the current option group.\n"
         "Click the BACK ARROW icon to reset all settings for the current option group to "

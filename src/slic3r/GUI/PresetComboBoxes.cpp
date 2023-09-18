@@ -1,3 +1,8 @@
+///|/ Copyright (c) Prusa Research 2020 - 2023 Oleksandra Iushchenko @YuSanka, David Kocík @kocikdav, Enrico Turri @enricoturri1966, Vojtěch Bubník @bubnikv, Filip Sykala @Jony01, Lukáš Matěna @lukasmatena, Tomáš Mészáros @tamasmeszaros
+///|/ Copyright (c) 2021 Scott Mudge @ScottMudge
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #include "PresetComboBoxes.hpp"
 
 #include <cstddef>
@@ -785,7 +790,7 @@ void PlaterPresetComboBox::show_edit_menu()
             [this](wxCommandEvent&) { this->change_extruder_color(); }, "funnel", menu, []() { return true; }, wxGetApp().plater());
 #endif //__linux__
         append_menu_item(menu, wxID_ANY, _L("Show/Hide template presets"), "",
-            [this](wxCommandEvent&) { wxGetApp().open_preferences("no_templates", "General"); }, "spool", menu, []() { return true; }, wxGetApp().plater());
+            [](wxCommandEvent&) { wxGetApp().open_preferences("no_templates", "General"); }, "spool", menu, []() { return true; }, wxGetApp().plater());
 
         wxGetApp().plater()->PopupMenu(menu);
         return;

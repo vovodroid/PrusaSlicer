@@ -1,3 +1,15 @@
+///|/ Copyright (c) Prusa Research 2016 - 2023 Vojtěch Bubník @bubnikv, Pavel Mikuš @Godrak, Lukáš Hejl @hejllukas, Roman Beránek @zavorka, Lukáš Matěna @lukasmatena, Vojtěch Král @vojtechkral
+///|/ Copyright (c) SuperSlicer 2023 Remi Durand @supermerill
+///|/ Copyright (c) 2016 Sakari Kapanen @Flannelhead
+///|/
+///|/ ported from lib/Slic3r/Print/SupportMaterial.pm:
+///|/ Copyright (c) Prusa Research 2016 - 2017 Vojtěch Bubník @bubnikv
+///|/ Copyright (c) 2016 Joseph Lenox @lordofhyphens
+///|/ Copyright (c) Slic3r 2013 - 2015 Alessandro Ranellucci @alranel
+///|/ Copyright (c) 2013 Mark Hindess
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #include "../ClipperUtils.hpp"
 #include "../ExtrusionEntityCollection.hpp"
 #include "../Layer.hpp"
@@ -1023,7 +1035,7 @@ namespace SupportMaterialInternal {
         assert(expansion_scaled >= 0.f);
         for (const ExtrusionPath &ep : loop.paths)
             if (ep.role() == ExtrusionRole::OverhangPerimeter && ! ep.polyline.empty()) {
-                float exp = 0.5f * (float)scale_(ep.width) + expansion_scaled;
+                float exp = 0.5f * (float)scale_(ep.width()) + expansion_scaled;
                 if (ep.is_closed()) {
                     if (ep.size() >= 3) {
                         // This is a complete loop.
