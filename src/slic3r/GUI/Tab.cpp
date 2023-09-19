@@ -27,6 +27,7 @@
 #include "libslic3r/Model.hpp"
 #include "libslic3r/GCode/GCodeProcessor.hpp"
 #include "libslic3r/GCode/GCodeWriter.hpp"
+#include "libslic3r/GCode/Thumbnails.hpp"
 
 #include "slic3r/Utils/Http.hpp"
 #include "slic3r/Utils/PrintHost.hpp"
@@ -661,21 +662,6 @@ void Tab::update_changed_ui()
                 dirty_options.emplace_back("extruders_count");
             if (tab->m_sys_extruders_count != tab->m_extruders_count)
                 nonsys_options.emplace_back("extruders_count");
-        }
-
-        // "thumbnails" can not containe a extentions in old config but are valid and use PNG extention by default
-        // So, check if "thumbnails" is really changed
-        // We will compare full strings for thumnails instead of exactly config values
-        {
-            auto check_thumbnails_option = [](std::vector<std::string>& keys, const DynamicPrintConfig& config, const DynamicPrintConfig& config_new) {
-                if (auto it = std::find(keys.begin(), keys.end(), "thumbnails"); it != keys.end())
-                    if (get_valid_thumbnails_string(config) == get_valid_thumbnails_string(config_new))
-                        // if those strings are actually the same, erase them from the list of dirty oprions
-                        keys.erase(it);
-            };
-            check_thumbnails_option(dirty_options, m_presets->get_edited_preset().config, m_presets->get_selected_preset().config);
-            if (const Preset* parent_preset = m_presets->get_selected_preset_parent())
-                check_thumbnails_option(nonsys_options, m_presets->get_edited_preset().config, parent_preset->config);
         }
     }
 
@@ -1818,7 +1804,7 @@ void TabPrint::update_description_lines()
                 _L("Post processing scripts shall modify G-code file in place."));
             m_post_process_explanation->SetPathEnd("post-processing-scripts_283913");
         }
-        // upadte G-code substitutions from the current configuration
+        // update G-code substitutions from the current configuration
         {
             m_subst_manager.update_from_config();
             if (m_del_all_substitutions_btn)
@@ -2461,7 +2447,7 @@ void TabFilament::load_current_preset()
             m_extruders_cb->Select(m_active_extruder);
     }
 
-    assert(m_active_extruder >= 0 && m_active_extruder < m_preset_bundle->extruders_filaments.size());
+    assert(m_active_extruder >= 0 && size_t(m_active_extruder) < m_preset_bundle->extruders_filaments.size());
     const std::string& selected_extr_filament_name = m_preset_bundle->extruders_filaments[m_active_extruder].get_selected_preset_name();
     if (selected_extr_filament_name != selected_filament_name) {
         m_presets->select_preset_by_name(selected_extr_filament_name, false);
@@ -2678,6 +2664,32 @@ void TabPrinter::build_fff()
 
         optgroup->m_on_change = [this](t_config_option_key opt_key, boost::any value) {
             wxTheApp->CallAfter([this, opt_key, value]() {
+                if (opt_key == "thumbnails" && m_config->has("thumbnails_format")) {
+                    // to backward compatibility we need to update "thumbnails_format" from new "thumbnails"
+                    if (const std::string val = boost::any_cast<std::string>(value); !value.empty()) {
+                        auto [thumbnails_list, errors] = GCodeThumbnails::make_and_check_thumbnail_list(val);
+
+                        if (errors != enum_bitmask<ThumbnailError>()) {
+                            std::string error_str = format(_u8L("Invalid value provided for parameter %1%: %2%"), "thumbnails", val);
+                            error_str += GCodeThumbnails::get_error_string(errors);
+                            InfoDialog(parent(), _L("G-code flavor is switched"), from_u8(error_str)).ShowModal();
+                        }
+
+                        if (!thumbnails_list.empty()) {
+                            GCodeThumbnailsFormat old_format = GCodeThumbnailsFormat(m_config->option("thumbnails_format")->getInt());
+                            GCodeThumbnailsFormat new_format = thumbnails_list.begin()->first;
+                            if (old_format != new_format) {
+                                DynamicPrintConfig new_conf = *m_config;
+
+                                auto* opt = m_config->option("thumbnails_format")->clone();
+                                opt->setInt(int(new_format));
+                                new_conf.set_key_value("thumbnails_format", opt);
+
+                                load_config(new_conf);
+                            }
+                        }
+                    }
+                }
                 if (opt_key == "silent_mode") {
                     bool val = boost::any_cast<bool>(value);
                     if (m_use_silent_mode != val) {
@@ -4537,22 +4549,24 @@ void SubstitutionManager::init(DynamicPrintConfig* config, wxWindow* parent, wxF
     m_parent = parent;
     m_grid_sizer = grid_sizer;
     m_em = em_unit(parent);
+
+    m_substitutions = m_config->option<ConfigOptionStrings>("gcode_substitutions")->values;
 }
 
-void SubstitutionManager::validate_lenth()
+void SubstitutionManager::validate_length()
 {
-    std::vector<std::string>& substitutions = m_config->option<ConfigOptionStrings>("gcode_substitutions")->values;
-    if ((substitutions.size() % 4) != 0) {
+    if ((m_substitutions.size() % 4) != 0) {
         WarningDialog(m_parent, "Value of gcode_substitutions parameter will be cut to valid length",
                                 "Invalid length of gcode_substitutions parameter").ShowModal();
-        substitutions.resize(substitutions.size() - (substitutions.size() % 4));
+        m_substitutions.resize(m_substitutions.size() - (m_substitutions.size() % 4));
+        // save changes from m_substitutions to config 
+        m_config->option<ConfigOptionStrings>("gcode_substitutions")->values = m_substitutions;
     }
 }
 
-bool SubstitutionManager::is_compatibile_with_ui()
+bool SubstitutionManager::is_compatible_with_ui()
 {
-    const std::vector<std::string>& substitutions = m_config->option<ConfigOptionStrings>("gcode_substitutions")->values;
-    if (int(substitutions.size() / 4) != m_grid_sizer->GetEffectiveRowsCount() - 1) {
+    if (int(m_substitutions.size() / 4) != m_grid_sizer->GetEffectiveRowsCount() - 1) {
         ErrorDialog(m_parent, "Invalid compatibility between UI and BE", false).ShowModal();
         return false;
     }
@@ -4561,8 +4575,7 @@ bool SubstitutionManager::is_compatibile_with_ui()
 
 bool SubstitutionManager::is_valid_id(int substitution_id, const wxString& message)
 {
-    const std::vector<std::string>& substitutions = m_config->option<ConfigOptionStrings>("gcode_substitutions")->values;
-    if (int(substitutions.size() / 4) < substitution_id) {
+    if (int(m_substitutions.size() / 4) < substitution_id) {
         ErrorDialog(m_parent, message, false).ShowModal();
         return false;
     }
@@ -4588,13 +4601,14 @@ void SubstitutionManager::create_legend()
 // delete substitution_id from substitutions
 void SubstitutionManager::delete_substitution(int substitution_id)
 {
-    validate_lenth();
+    validate_length();
     if (!is_valid_id(substitution_id, "Invalid substitution_id to delete"))
         return;
 
     // delete substitution
     std::vector<std::string>& substitutions = m_config->option<ConfigOptionStrings>("gcode_substitutions")->values;
     substitutions.erase(std::next(substitutions.begin(), substitution_id * 4), std::next(substitutions.begin(), substitution_id * 4 + 4));
+
     call_ui_update();
 
     // update grid_sizer
@@ -4613,15 +4627,16 @@ void SubstitutionManager::add_substitution( int substitution_id,
     if (substitution_id < 0) {
         if (m_grid_sizer->IsEmpty()) {
             create_legend();
-            substitution_id = 0;
         }
         substitution_id = m_grid_sizer->GetEffectiveRowsCount() - 1;
 
         // create new substitution
         // it have to be added to config too
-        std::vector<std::string>& substitutions = m_config->option<ConfigOptionStrings>("gcode_substitutions")->values;
         for (size_t i = 0; i < 4; i ++)
-            substitutions.push_back(std::string());
+            m_substitutions.push_back(std::string());
+
+        // save changes from config to m_substitutions
+        m_config->option<ConfigOptionStrings>("gcode_substitutions")->values = m_substitutions;
 
         call_after_layout = true;
     }
@@ -4683,6 +4698,8 @@ void SubstitutionManager::add_substitution( int substitution_id,
     auto chb_match_single_line = new wxCheckBox(m_parent, wxID_ANY, _L("Match single line"));
     chb_match_single_line->SetValue(match_single_line);
     chb_match_single_line->Show(regexp);
+    m_chb_match_single_lines.emplace_back(chb_match_single_line);
+
     params_sizer->Add(chb_match_single_line, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT | wxLEFT, m_em);
 
     for (wxCheckBox* chb : std::initializer_list<wxCheckBox*>{ chb_regexp, chb_case_insensitive, chb_whole_word, chb_match_single_line }) {
@@ -4718,16 +4735,33 @@ void SubstitutionManager::add_substitution( int substitution_id,
 
 void SubstitutionManager::update_from_config()
 {
-    if (!m_grid_sizer->IsEmpty())
-        m_grid_sizer->Clear(true);
-
     std::vector<std::string>& subst = m_config->option<ConfigOptionStrings>("gcode_substitutions")->values;
+    if (m_substitutions == subst && m_grid_sizer->IsShown(1)) {
+        // just update visibility for chb_match_single_lines
+        int subst_id = 0;
+        for (size_t i = 0; i < subst.size(); i += 4) {
+            const std::string& params = subst[i + 2];
+            const bool         regexp = strchr(params.c_str(), 'r') != nullptr || strchr(params.c_str(), 'R') != nullptr;
+            m_chb_match_single_lines[subst_id++]->Show(regexp);
+        }
+
+        // "gcode_substitutions" values didn't changed in config. There is no need to update/recreate controls
+        return;
+    }
+
+    m_substitutions = subst;
+
+    if (!m_grid_sizer->IsEmpty()) {
+        m_grid_sizer->Clear(true);
+        m_chb_match_single_lines.clear();
+    }
+
     if (subst.empty())
         hide_delete_all_btn();
     else
         create_legend();
 
-    validate_lenth();
+    validate_length();
 
     int subst_id = 0;
     for (size_t i = 0; i < subst.size(); i += 4)
@@ -4738,7 +4772,8 @@ void SubstitutionManager::update_from_config()
 
 void SubstitutionManager::delete_all()
 {
-    m_config->option<ConfigOptionStrings>("gcode_substitutions")->values.clear(); 
+    m_substitutions.clear();
+    m_config->option<ConfigOptionStrings>("gcode_substitutions")->values.clear();
     call_ui_update();
 
     if (!m_grid_sizer->IsEmpty())
@@ -4749,13 +4784,13 @@ void SubstitutionManager::delete_all()
 
 void SubstitutionManager::edit_substitution(int substitution_id, int opt_pos, const std::string& value)
 {
-    std::vector<std::string>& substitutions = m_config->option<ConfigOptionStrings>("gcode_substitutions")->values;
-
-    validate_lenth();
-    if(!is_compatibile_with_ui() || !is_valid_id(substitution_id, "Invalid substitution_id to edit"))
+    validate_length();
+    if(!is_compatible_with_ui() || !is_valid_id(substitution_id, "Invalid substitution_id to edit"))
         return;
 
-    substitutions[substitution_id * 4 + opt_pos] = value;
+    m_substitutions[substitution_id * 4 + opt_pos] = value;
+    // save changes from m_substitutions to config 
+    m_config->option<ConfigOptionStrings>("gcode_substitutions")->values = m_substitutions;
 
     call_ui_update();
 }

@@ -113,7 +113,7 @@ const t_field& OptionsGroup::build_field(const t_config_option_key& id, const Co
             if (!m_disabled)
                 this->edit_custom_gcode(opt_id);
         };
-        field->set_edit_tooltip(_L("Edit CustomG-code"));
+        field->set_edit_tooltip(_L("Edit Custom G-code"));
     }
 
 	field->m_back_to_initial_value = [this](std::string opt_id) {
@@ -925,10 +925,7 @@ boost::any ConfigOptionsGroup::get_config_value(const DynamicPrintConfig& config
 		}
 		break;
 	case coString: {
-        if (opt_key == "thumbnails")
-            ret = get_valid_thumbnails_string(config);
-        else
-            ret = from_u8(config.opt_string(opt_key));
+        ret = from_u8(config.opt_string(opt_key));
         break;
     }
 	case coStrings:

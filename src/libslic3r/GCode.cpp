@@ -874,8 +874,15 @@ void GCodeGenerator::_do_export(Print& print, GCodeOutputStream &file, Thumbnail
 
         // Unit tests or command line slicing may not define "thumbnails" or "thumbnails_format".
         // If "thumbnails_format" is not defined, export to PNG.
-        if (std::vector<std::pair<GCodeThumbnailsFormat, Vec2d>> thumbnails = GCodeThumbnails::make_thumbnail_list(print.full_print_config());
-            ! thumbnails.empty())
+        auto [thumbnails, errors] = GCodeThumbnails::make_and_check_thumbnail_list(print.full_print_config());
+
+        if (errors != enum_bitmask<ThumbnailError>()) {
+            std::string error_str = format("Invalid thumbnails value:");
+            error_str += GCodeThumbnails::get_error_string(errors);
+            throw Slic3r::ExportError(error_str);
+        }
+
+        if (!thumbnails.empty())
             GCodeThumbnails::generate_binary_thumbnails(
                 thumbnail_cb, binary_data.thumbnails, thumbnails,
                 [&print]() { print.throw_if_canceled(); });
@@ -1009,8 +1016,15 @@ void GCodeGenerator::_do_export(Print& print, GCodeOutputStream &file, Thumbnail
 
     if (! export_to_binary_gcode) {
         // if exporting gcode in ascii format, generate the thumbnails here
-        if (std::vector<std::pair<GCodeThumbnailsFormat, Vec2d>> thumbnails = GCodeThumbnails::make_thumbnail_list(print.full_print_config());
-            ! thumbnails.empty())
+        auto [thumbnails, errors] = GCodeThumbnails::make_and_check_thumbnail_list(print.full_print_config());
+
+        if (errors != enum_bitmask<ThumbnailError>()) {
+            std::string error_str = format("Invalid thumbnails value:");
+            error_str += GCodeThumbnails::get_error_string(errors);
+            throw Slic3r::ExportError(error_str);
+        }
+
+        if (!thumbnails.empty())
             GCodeThumbnails::export_thumbnails_to_file(thumbnail_cb, thumbnails,
                 [&file](const char* sz) { file.write(sz); },
                 [&print]() { print.throw_if_canceled(); });
@@ -1625,10 +1639,30 @@ std::string GCodeGenerator::placeholder_parser_process(
     unsigned int         current_extruder_id,
     const DynamicConfig *config_override)
 {
-#if GET_CUSTOM_GCODE_PLACEHOLDERS
-    if (config_override &&
-        g_code_placeholders_map.find(name) == g_code_placeholders_map.end())
-            g_code_placeholders_map[name] = *config_override;
+#ifndef NDEBUG // CHECK_CUSTOM_GCODE_PLACEHOLDERS
+    if (config_override) {
+        const auto& custom_gcode_placeholders = custom_gcode_specific_placeholders();
+
+        // 1-st check: custom G-code "name" have to be present in s_CustomGcodeSpecificOptions;
+        //if (custom_gcode_placeholders.count(name) > 0) {
+        //    const auto& placeholders = custom_gcode_placeholders.at(name);
+        if (auto it = custom_gcode_placeholders.find(name); it != custom_gcode_placeholders.end()) {
+            const auto& placeholders = it->second;
+
+            for (const std::string& key : config_override->keys()) {
+                // 2-nd check: "key" have to be present in s_CustomGcodeSpecificOptions for "name" custom G-code ;
+                if (std::find(placeholders.begin(), placeholders.end(), key) == placeholders.end())
+                    throw Slic3r::PlaceholderParserError(format("\"%s\" placeholder for \"%s\" custom G-code \n"
+                                                                "needs to be added to s_CustomGcodeSpecificOptions", key.c_str(), name.c_str()));
+                // 3-rd check: "key" have to be present in CustomGcodeSpecificConfigDef for "key" placeholder;
+                if (!custom_gcode_specific_config_def.has(key))
+                    throw Slic3r::PlaceholderParserError(format("Definition of \"%s\" placeholder \n"
+                                                                "needs to be added to CustomGcodeSpecificConfigDef", key.c_str()));
+            }
+        }
+        else
+            throw Slic3r::PlaceholderParserError(format("\"%s\" custom G-code needs to be added to s_CustomGcodeSpecificOptions", name.c_str()));
+    }
 #endif
 
     PlaceholderParserIntegration &ppi = m_placeholder_parser_integration;
@@ -3279,7 +3313,12 @@ std::string GCodeGenerator::set_extruder(unsigned int extruder_id, double print_
         unsigned int        old_extruder_id     = m_writer.extruder()->id();
         const std::string  &end_filament_gcode  = m_config.end_filament_gcode.get_at(old_extruder_id);
         if (! end_filament_gcode.empty()) {
-            gcode += placeholder_parser_process("end_filament_gcode", end_filament_gcode, old_extruder_id);
+            DynamicConfig config;
+            config.set_key_value("layer_num", new ConfigOptionInt(m_layer_index));
+            config.set_key_value("layer_z",   new ConfigOptionFloat(m_writer.get_position().z() - m_config.z_offset.value));
+            config.set_key_value("max_layer_z", new ConfigOptionFloat(m_max_layer_z));
+            config.set_key_value("filament_extruder_id", new ConfigOptionInt(int(old_extruder_id)));
+            gcode += placeholder_parser_process("end_filament_gcode", end_filament_gcode, old_extruder_id, &config);
             check_add_eol(gcode);
         }
     }
