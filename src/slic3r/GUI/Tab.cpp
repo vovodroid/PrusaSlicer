@@ -1453,7 +1453,7 @@ void TabPrint::build()
         optgroup->append_single_option_line("avoid_crossing_perimeters_max_detour", category_path + "avoid_crossing_perimeters_max_detour");
         optgroup->append_single_option_line("thin_walls", category_path + "detect-thin-walls");
         optgroup->append_single_option_line("thick_bridges", category_path + "thick_bridges");
-        optgroup->append_single_option_line("overhangs", category_path + "detect-bridging-perimeters");
+        optgroup->append_single_option_line("overhangs_detection", category_path + "detect-bridging-perimeters");
 
         optgroup = page->new_optgroup(L("Advanced"));
         optgroup->append_single_option_line("seam_position", category_path + "seam-position");
@@ -1790,15 +1790,15 @@ void TabPrint::update()
 
     // see https://github.com/prusa3d/PrusaSlicer/issues/6814
     // ysFIXME: It's temporary workaround and should be clewer reworked:
-    // Note: This workaround works till "support_material" and "overhangs" is exclusive sets of mutually no-exclusive parameters.
+    // Note: This workaround works till "support_material" and "overhangs_detection" is exclusive sets of mutually no-exclusive parameters.
     // But it should be corrected when we will have more such sets.
-    // Disable check of the compatibility of the "support_material" and "overhangs" options for saved user profile
+    // Disable check of the compatibility of the "support_material" and "overhangs_detection" options for saved user profile
     // NOTE: Initialization of the support_material_overhangs_queried value have to be processed just ones
     if (!m_config_manipulation.is_initialized_support_material_overhangs_queried())
     {
         const Preset& selected_preset = m_preset_bundle->prints.get_selected_preset();
         bool is_user_and_saved_preset = !selected_preset.is_system && !selected_preset.is_dirty;
-        bool support_material_overhangs_queried = m_config->opt_bool("support_material") && !m_config->opt_bool("overhangs");
+        bool support_material_overhangs_queried = m_config->opt_bool("support_material") && !m_config->opt_int("overhangs_detection");
         m_config_manipulation.initialize_support_material_overhangs_queried(is_user_and_saved_preset && support_material_overhangs_queried);
     }
 

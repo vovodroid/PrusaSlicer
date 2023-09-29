@@ -2338,13 +2338,13 @@ void PrintConfigDef::init_fff_params()
     def->mode = comExpert;
     def->set_default_value(new ConfigOptionString("[input_filename_base].gcode"));
 
-    def = this->add("overhangs", coBool);
-    def->label = L("Detect bridging perimeters");
+    def = this->add("overhangs_detection", coInt);
+    def->label = L("Overhangs detection sensitivity");
     def->category = L("Layers and Perimeters");
-    def->tooltip = L("Experimental option to adjust flow for overhangs (bridge flow will be used), "
-                   "to apply bridge speed to them and enable fan.");
+    def->tooltip = L("Set 0 to disable. Increse to detect less steep overhangs.");
+    def->min = 0;
     def->mode = comAdvanced;
-    def->set_default_value(new ConfigOptionBool(true));
+    def->set_default_value(new ConfigOptionInt(2));
 
     def = this->add("parking_pos_retraction", coFloat);
     def->label = L("Filament parking position");

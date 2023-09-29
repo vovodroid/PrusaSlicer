@@ -714,7 +714,7 @@ PRINT_CONFIG_CLASS_DEFINE(
     ((ConfigOptionFloat,                ironing_spacing))
     ((ConfigOptionFloat,                ironing_speed))
     // Detect bridging perimeters
-    ((ConfigOptionBool,                 overhangs))
+    ((ConfigOptionInt,                  overhangs_detection))
     ((ConfigOptionInt,                  perimeter_extruder))
     ((ConfigOptionFloatOrPercent,       perimeter_extrusion_width))
     ((ConfigOptionFloat,                perimeter_speed))
