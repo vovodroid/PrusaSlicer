@@ -1234,8 +1234,18 @@ void PerimeterGenerator::process_arachne(
         }
     }
 
-    if (ExtrusionEntityCollection extrusion_coll = traverse_extrusions(params, lower_slices_polygons_cache, ordered_extrusions); !extrusion_coll.empty())
+    if (ExtrusionEntityCollection extrusion_coll = traverse_extrusions(params, lower_slices_polygons_cache, ordered_extrusions); !extrusion_coll.empty()) {
+        if (params.config.external_perimeters_first && params.config.internal_first_on_overhangs)
+            for (ExtrusionEntity* ent : extrusion_coll)
+                if (ent->is_loop())
+                    for (ExtrusionPath path: ((ExtrusionLoop*)ent)->paths)
+                        if (path.role().is_bridge()){
+                            extrusion_coll.reverse();
+                            goto cont;
+                        }
+        cont:
         out_loops.append(extrusion_coll);
+    }
 
     const coord_t spacing = (perimeters.size() == 1) ? ext_perimeter_spacing2 : perimeter_spacing;
     if (offset_ex(infill_contour, -float(spacing / 2.)).empty())
@@ -1569,8 +1579,18 @@ void PerimeterGenerator::process_classic(
             (params.layer_id == 0 && params.object_config.brim_width.value > 0))
             entities.reverse();
         // append perimeters for this slice as a collection
-        if (! entities.empty())
+        if (!entities.empty()) {
+            if (params.config.internal_first_on_overhangs)
+                for (ExtrusionEntity* ent : entities)
+                    if (ent->is_loop())
+                        for (ExtrusionPath path: ((ExtrusionLoop*)ent)->paths)
+                            if (path.role().is_bridge()){
+                                entities.reverse();
+                                goto cont;
+                            }
+            cont:
             out_loops.append(entities);
+        }
     } // for each loop of an island
 
     // fill gaps

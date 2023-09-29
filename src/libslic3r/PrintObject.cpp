@@ -721,6 +721,7 @@ bool PrintObject::invalidate_state_by_config_options(
             || opt_key == "perimeter_extrusion_width"
             || opt_key == "infill_overlap"
             || opt_key == "external_perimeters_first"
+            || opt_key == "internal_first_on_overhangs"
             || opt_key == "arc_fitting"
             || opt_key == "top_one_perimeter_type"
             || opt_key == "only_one_perimeter_first_layer") {

@@ -233,6 +233,8 @@ void ConfigManipulation::toggle_print_fff_options(DynamicPrintConfig* config)
                     "perimeter_speed", "small_perimeter_speed", "external_perimeter_speed", "enable_dynamic_overhang_speeds"})
         toggle_field(el, have_perimeters);
 
+    toggle_field("internal_first_on_overhangs", have_perimeters && config->opt_bool("external_perimeters_first"));
+
     for (size_t i = 0; i < 4; i++) {
         toggle_field("overhang_speed_" + std::to_string(i), config->opt_bool("enable_dynamic_overhang_speeds"));
     }
