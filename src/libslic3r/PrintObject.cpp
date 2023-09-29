@@ -864,7 +864,7 @@ bool PrintObject::invalidate_state_by_config_options(
             || opt_key == "fuzzy_skin"
             || opt_key == "fuzzy_skin_thickness"
             || opt_key == "fuzzy_skin_point_dist"
-            || opt_key == "overhangs"
+            || opt_key == "overhangs_detection"
             || opt_key == "thin_walls"
             || opt_key == "thick_bridges") {
             steps.emplace_back(posPerimeters);

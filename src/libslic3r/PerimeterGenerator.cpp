@@ -309,7 +309,7 @@ static ExtrusionEntityCollection traverse_loops_classic(const PerimeterGenerator
             fuzzified = loop.polygon;
             fuzzy_polygon(fuzzified, scaled<float>(params.config.fuzzy_skin_thickness.value), scaled<float>(params.config.fuzzy_skin_point_dist.value));
         }
-        if (params.config.overhangs && params.layer_id > params.object_config.raft_layers
+        if (params.config.overhangs_detection && params.layer_id > params.object_config.raft_layers
             && ! ((params.object_config.support_material || params.object_config.support_material_enforce_layers > 0) && 
                   params.object_config.support_material_contact_distance.value == 0)) {
             BoundingBox bbox(polygon.points);
@@ -509,7 +509,7 @@ static ExtrusionEntityCollection traverse_extrusions(const PerimeterGenerator::P
 
         ExtrusionPaths paths;
         // detect overhanging/bridging perimeters
-        if (params.config.overhangs && params.layer_id > params.object_config.raft_layers
+        if (params.config.overhangs_detection && params.layer_id > params.object_config.raft_layers
             && ! ((params.object_config.support_material || params.object_config.support_material_enforce_layers > 0) &&
                  params.object_config.support_material_contact_distance.value == 0)) {
 
@@ -1085,12 +1085,12 @@ void PerimeterGenerator::process_arachne(
     coord_t solid_infill_spacing  = params.solid_infill_flow.scaled_spacing();
 
     // prepare grown lower layer slices for overhang detection
-    if (params.config.overhangs && lower_slices != nullptr && lower_slices_polygons_cache.empty()) {
+    if (params.config.overhangs_detection && lower_slices != nullptr && lower_slices_polygons_cache.empty()) {
         // We consider overhang any part where the entire nozzle diameter is not supported by the
         // lower layer, so we take lower slices and offset them by half the nozzle diameter used
         // in the current layer
         double nozzle_diameter = params.print_config.nozzle_diameter.get_at(params.config.perimeter_extruder-1);
-        lower_slices_polygons_cache = offset(*lower_slices, float(scale_(+nozzle_diameter/2)));
+        lower_slices_polygons_cache = offset(*lower_slices, float(scale_(+nozzle_diameter/params.config.overhangs_detection)));
     }
 
     // we need to process each island separately because we might have different
@@ -1266,7 +1266,7 @@ void PerimeterGenerator::process_arachne(
             float(- min_perimeter_infill_spacing / 2.),
             float(inset + min_perimeter_infill_spacing / 2.));
 
-    if (lower_slices != nullptr && params.config.overhangs && params.config.extra_perimeters_on_overhangs &&
+    if (lower_slices != nullptr && params.config.overhangs_detection && params.config.extra_perimeters_on_overhangs &&
         params.config.perimeters > 0 && params.layer_id > params.object_config.raft_layers) {
         // Generate extra perimeters on overhang areas, and cut them to these parts only, to save print time and material
         auto [extra_perimeters, filled_area] = generate_extra_perimeters_over_overhangs(infill_areas,
@@ -1329,12 +1329,12 @@ void PerimeterGenerator::process_classic(
     bool    has_gap_fill 		= params.config.gap_fill_enabled.value && params.config.gap_fill_speed.value > 0;
 
     // prepare grown lower layer slices for overhang detection
-    if (params.config.overhangs && lower_slices != nullptr && lower_slices_polygons_cache.empty()) {
+    if (params.config.overhangs_detection && lower_slices != nullptr && lower_slices_polygons_cache.empty()) {
         // We consider overhang any part where the entire nozzle diameter is not supported by the
         // lower layer, so we take lower slices and offset them by half the nozzle diameter used 
         // in the current layer
         double nozzle_diameter = params.print_config.nozzle_diameter.get_at(params.config.perimeter_extruder-1);
-        lower_slices_polygons_cache = offset(*lower_slices, float(scale_(+nozzle_diameter/2)));
+        lower_slices_polygons_cache = offset(*lower_slices, float(scale_(+nozzle_diameter/params.config.overhangs_detection)));
     }
 
     // we need to process each island separately because we might have different
@@ -1636,7 +1636,7 @@ void PerimeterGenerator::process_classic(
         infill_areas = union_ex(infill_areas, offset_ex(top_infill_areas, float(infill_perimeter_overlap)));
     }
 
-    if (lower_slices != nullptr && params.config.overhangs && params.config.extra_perimeters_on_overhangs &&
+    if (lower_slices != nullptr && params.config.overhangs_detection && params.config.extra_perimeters_on_overhangs &&
         params.config.perimeters > 0 && params.layer_id > params.object_config.raft_layers) {
         // Generate extra perimeters on overhang areas, and cut them to these parts only, to save print time and material
         auto [extra_perimeters, filled_area] = generate_extra_perimeters_over_overhangs(infill_areas,

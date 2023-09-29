@@ -159,12 +159,12 @@ void ConfigManipulation::update_print_fff_config(DynamicPrintConfig* config, con
         }
     }
 
-    // Check "support_material" and "overhangs" relations only on global settings level
+    // Check "support_material" and "overhangs_detection" relations only on global settings level
     if (is_global_config && config->opt_bool("support_material")) {
         // Ask only once.
         if (!m_support_material_overhangs_queried) {
             m_support_material_overhangs_queried = true;
-            if (!config->opt_bool("overhangs")/* != 1*/) {
+            if (!config->opt_int("overhangs_detection")) {
                 wxString msg_text = _(L("Supports work better, if the following feature is enabled:\n"
                                         "- Detect bridging perimeters"));
                 if (is_global_config)
@@ -174,7 +174,7 @@ void ConfigManipulation::update_print_fff_config(DynamicPrintConfig* config, con
                 auto answer = dialog.ShowModal();
                 if (answer == wxID_YES) {
                     // Enable "detect bridging perimeters".
-                    new_conf.set_key_value("overhangs", new ConfigOptionBool(true));
+                    new_conf.set_key_value("overhangs_detection", new ConfigOptionInt(2));
                 }
                 //else Do nothing, leave supports on and "detect bridging perimeters" off.
                 apply(config, &new_conf);
@@ -228,7 +228,7 @@ void ConfigManipulation::update_print_fff_config(DynamicPrintConfig* config, con
 void ConfigManipulation::toggle_print_fff_options(DynamicPrintConfig* config)
 {
     bool have_perimeters = config->opt_int("perimeters") > 0;
-    for (auto el : { "extra_perimeters","extra_perimeters_on_overhangs", "thin_walls", "overhangs",
+    for (auto el : { "extra_perimeters","extra_perimeters_on_overhangs", "thin_walls", "overhangs_detection",
                     "seam_position","staggered_inner_seams", "external_perimeters_first", "external_perimeter_extrusion_width",
                     "perimeter_speed", "small_perimeter_speed", "external_perimeter_speed", "enable_dynamic_overhang_speeds"})
         toggle_field(el, have_perimeters);

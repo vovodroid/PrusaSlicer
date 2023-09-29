@@ -1761,7 +1761,7 @@ static inline SupportGeneratorLayer* detect_bottom_contacts(
 #ifdef SLIC3R_DEBUG
     SVG::export_expolygons(debug_out_path("support-bottom-layers-raw-%d-%lf.svg", iRun, layer.print_z),
         { { { union_ex(top) },                                { "top",            "blue",    0.5f } },
-            { { union_safety_offset_ex(supports_projected) }, { "overhangs",      "magenta", 0.5f } },
+            { { union_safety_offset_ex(supports_projected) }, { "overhangs_detection",      "magenta", 0.5f } },
             { layer.lslices,                                  { "layer.lslices",  "green",   0.5f } },
             { { union_safety_offset_ex(polygons_new) },       { "polygons_new",   "red", "black", "", scaled<coord_t>(0.1f), 0.5f } } });
 #endif /* SLIC3R_DEBUG */
@@ -2510,7 +2510,7 @@ void PrintObjectSupportMaterial::trim_support_layers_by_object(
                             some_region_overlaps = true;
                             polygons_append(polygons_trimming, 
                                 offset(region->fill_surfaces().filter_by_type(stBottomBridge), gap_xy_scaled, SUPPORT_SURFACES_OFFSET_PARAMETERS));
-                            if (region->region().config().overhangs.value)
+                            if (region->region().config().overhangs_detection)
                                 // Add bridging perimeters.
                                 SupportMaterialInternal::collect_bridging_perimeter_areas(region->perimeters(), gap_xy_scaled, polygons_trimming);
                         }
