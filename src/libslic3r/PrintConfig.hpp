@@ -196,6 +196,10 @@ enum class GCodeThumbnailsFormat {
     PNG, JPG, QOI
 };
 
+enum class ExtraPerimeter {
+    None, Odd, Even
+};
+
 enum TowerSpeeds : int {
     tsLayer1,
     tsLayer2,
@@ -254,6 +258,7 @@ CONFIG_OPTION_ENUM_DECLARE_STATIC_MAPS(LabelObjectsStyle)
 CONFIG_OPTION_ENUM_DECLARE_STATIC_MAPS(GCodeThumbnailsFormat)
 CONFIG_OPTION_ENUM_DECLARE_STATIC_MAPS(ForwardCompatibilitySubstitutionRule)
 CONFIG_OPTION_ENUM_DECLARE_STATIC_MAPS(PerimeterGeneratorType)
+CONFIG_OPTION_ENUM_DECLARE_STATIC_MAPS(ExtraPerimeter)
 CONFIG_OPTION_ENUM_DECLARE_STATIC_MAPS(TopOnePerimeterType)
 
 #undef CONFIG_OPTION_ENUM_DECLARE_STATIC_MAPS
@@ -697,6 +702,7 @@ PRINT_CONFIG_CLASS_DEFINE(
     ((ConfigOptionBool,                 external_perimeters_first))
     ((ConfigOptionBool,                 extra_perimeters))
     ((ConfigOptionBool,                 extra_perimeters_on_overhangs))
+    ((ConfigOptionEnum<ExtraPerimeter>, extra_perimeter_odd_even))
     ((ConfigOptionFloat,                fill_angle))
     ((ConfigOptionFloat,                top_fill_angle))
     ((ConfigOptionFloat,                bottom_fill_angle))

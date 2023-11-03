@@ -457,6 +457,7 @@ static std::vector<std::string> s_Preset_print_options {
     "ensure_vertical_shell_thickness",
     "extra_perimeters", "extra_perimeters_on_overhangs", "avoid_crossing_curled_overhangs", "avoid_crossing_perimeters", "thin_walls", "overhangs_detection",
     "make_overhang_printable", "make_overhang_printable_angle", "make_overhang_printable_hole_size",
+    "extra_perimeter_odd_even",
     "seam_position","staggered_inner_seams", "external_perimeters_first", "fill_density", "fill_pattern", "top_fill_pattern", "bottom_fill_pattern",
     "solid_fill_pattern",
     "internal_first_on_overhangs",
