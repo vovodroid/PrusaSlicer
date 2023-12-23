@@ -644,6 +644,9 @@ PRINT_CONFIG_CLASS_DEFINE(
     ((ConfigOptionFloat,               xy_size_compensation))
     ((ConfigOptionBool,                wipe_into_objects))
     ((ConfigOptionInt,                 bridge_fan_speed_layers))
+    // Orca
+    ((ConfigOptionFloat,               make_overhang_printable_angle))
+    ((ConfigOptionFloat,               make_overhang_printable_hole_size))
 )
 
 PRINT_CONFIG_CLASS_DEFINE(
@@ -718,6 +721,8 @@ PRINT_CONFIG_CLASS_DEFINE(
     // Single perimeter.
     ((ConfigOptionEnum<TopOnePerimeterType>, top_one_perimeter_type))
     ((ConfigOptionBool,                 only_one_perimeter_first_layer))
+    // Orca
+    ((ConfigOptionBool,                 make_overhang_printable))
 )
 
 PRINT_CONFIG_CLASS_DEFINE(
