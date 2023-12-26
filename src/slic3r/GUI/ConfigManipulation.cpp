@@ -346,8 +346,7 @@ void ConfigManipulation::toggle_print_fff_options(DynamicPrintConfig* config)
     toggle_field("min_bead_width", have_arachne);
     toggle_field("thin_walls", !have_arachne);
 
-    toggle_field("only_one_perimeter_top", !have_arachne);
-    toggle_field("min_width_top_surface", have_perimeters && config->opt_bool("only_one_perimeter_top") && !have_arachne);
+    toggle_field("min_width_top_surface", have_perimeters && config->opt_bool("only_one_perimeter_top"));
 
     bool has_arc_fitting = config->opt_enum<ArcFittingType>("arc_fitting") != ArcFittingType::Disabled;
     toggle_field("arc_fitting_tolerance", has_arc_fitting);
