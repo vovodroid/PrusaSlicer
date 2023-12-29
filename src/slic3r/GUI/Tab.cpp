@@ -1683,6 +1683,12 @@ void TabPrint::build()
         optgroup->append_single_option_line("make_overhang_printable_angle", category_path);
         optgroup->append_single_option_line("make_overhang_printable_hole_size", category_path);
 
+        optgroup = page->new_optgroup(L("Extrusion direction reverse"));
+        optgroup->append_single_option_line("reverse_overhangs");
+        optgroup->append_single_option_line("reverse_external_perimeters");
+        optgroup->append_single_option_line("reverse_perimeters");
+        optgroup->append_single_option_line("reverse_infill");
+
         optgroup = page->new_optgroup(L("Arachne perimeter generator"));
         optgroup->append_single_option_line("wall_transition_angle");
         optgroup->append_single_option_line("wall_transition_filter_deviation");

@@ -723,6 +723,7 @@ bool PrintObject::invalidate_state_by_config_options(
             || opt_key == "external_perimeters_first"
             || opt_key == "internal_first_on_overhangs"
             || opt_key == "arc_fitting"
+            || opt_key == "reverse_overhangs"
             || opt_key == "top_one_perimeter_type"
             || opt_key == "only_one_perimeter_first_layer") {
             steps.emplace_back(posPerimeters);
@@ -845,7 +846,7 @@ bool PrintObject::invalidate_state_by_config_options(
             || opt_key == "infill_anchor_max"
             || opt_key == "top_infill_extrusion_width"
             || opt_key == "first_layer_extrusion_width"
-            || opt_key == "first_layer_flow_ratio"
+            || opt_key == "solid_infill_flow_ratio"
             || opt_key == "top_layer_flow_ratio") {
             steps.emplace_back(posInfill);
         } else if (opt_key == "fill_pattern") {

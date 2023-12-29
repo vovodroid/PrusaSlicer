@@ -2734,6 +2734,7 @@ void PrintConfigDef::init_fff_params()
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionBool(false));
 
+    def->sidetext = L("%");
 #if 0
     def = this->add("seam_preferred_direction", coFloat);
 //    def->gui_type = ConfigOptionDef::GUIType::slider;
@@ -3819,6 +3820,35 @@ void PrintConfigDef::init_fff_params()
     def->mode = comAdvanced;
     def->min = 0.;
     def->set_default_value(new ConfigOptionFloat(0.));
+
+    def = this->add("reverse_overhangs", coBool);
+    def->label = L("Reverse external perimeters with overhang direction every layer");
+    def->category = L("Advanced");
+    def->tooltip = L("Extrude each layer overhang perimeters in opposite direction, improving quality.");
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionBool(false));
+
+    def = this->add("reverse_external_perimeters", coBool);
+    def->label = L("Reverse external perimeters directions on even layers");
+    def->category = L("Advanced");
+    def->tooltip = L("Extrude each layer external perimeters in opposite direction, reduce internal stress and warping, "
+                     "but also surface quality.");
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionBool(false));
+
+    def = this->add("reverse_perimeters", coBool);
+    def->label = L("Reverse internal perimeters directions on even layers");
+    def->category = L("Advanced");
+    def->tooltip = L("Extrude each layer perimeters in opposite direction, reduce internal stress and warping.");
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionBool(true));
+
+    def = this->add("reverse_infill", coBool);
+    def->label = L("Reverse infill direction every layer");
+    def->category = L("Advanced");
+    def->tooltip = L("Extrude each layer infill in opposite direction, reduce internal stress and warping.");
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionBool(false));
 
     // Declare retract values for filament profile, overriding the printer's extruder profile.
     for (const char *opt_key : {

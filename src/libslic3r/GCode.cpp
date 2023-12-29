@@ -3039,11 +3039,11 @@ static inline bool validate_smooth_path(const GCode::SmoothPath &smooth_path, bo
 
 static constexpr const double min_gcode_segment_length = 0.002;
 
-std::string GCodeGenerator::extrude_loop(const ExtrusionLoop &loop_src, const GCode::SmoothPathCache &smooth_path_cache, const std::string_view description, double speed)
+std::string GCodeGenerator::extrude_loop(const ExtrusionLoop &loop_src, bool reverse, const GCode::SmoothPathCache &smooth_path_cache, const std::string_view description, double speed)
 {
     // Extrude all loops CCW unless CW movements are prefered.
     const bool is_hole      = loop_src.is_clockwise();
-    const bool reverse_loop = m_config.prefer_clockwise_movements ? !is_hole : is_hole;
+    const bool reverse_loop = reverse ^ (m_config.prefer_clockwise_movements ? !is_hole : is_hole);
 
     Point seam_point = this->last_position.has_value() ? *this->last_position : Point::Zero();
     if (!m_config.spiral_vase && comment_is_perimeter(description)) {
@@ -3098,7 +3098,7 @@ std::string GCodeGenerator::extrude_skirt(
     const GCode::SmoothPathCache &smooth_path_cache, const std::string_view description, double speed)
 {
     assert(loop_src.is_counter_clockwise());
-    const bool reverse_loop = m_config.prefer_clockwise_movements;
+    const bool reverse_loop = m_config.prefer_clockwise_movements || (this->m_layer->id() % 2 == 1);
 
     Point seam_point = this->last_position.has_value() ? *this->last_position : Point::Zero();
     GCode::SmoothPath smooth_path = smooth_path_cache.resolve_or_fit_split_with_seam(loop_src, reverse_loop, m_scaled_resolution, seam_point, scaled<double>(0.0015));
@@ -3162,9 +3162,23 @@ std::string GCodeGenerator::extrude_entity(const ExtrusionEntityReference &entit
         return this->extrude_path(*path, entity.flipped(), smooth_path_cache, description, speed);
     else if (const ExtrusionMultiPath *multipath = dynamic_cast<const ExtrusionMultiPath*>(&entity.extrusion_entity()))
         return this->extrude_multi_path(*multipath, entity.flipped(), smooth_path_cache, description, speed);
-    else if (const ExtrusionLoop *loop = dynamic_cast<const ExtrusionLoop*>(&entity.extrusion_entity()))
-        return this->extrude_loop(*loop, smooth_path_cache, description, speed);
-    else
+    else if (const ExtrusionLoop *loop = dynamic_cast<const ExtrusionLoop*>(&entity.extrusion_entity())) {
+        ExtrusionRole role = entity.extrusion_entity().role();
+        bool reverse = 
+                this->m_layer->id() % 2 == 1 &&
+                (   role.is_external_perimeter() && this->config().reverse_external_perimeters
+                 || role.is_perimeter() && !role.is_external()&& this->config().reverse_perimeters
+                 || role.is_infill() && this->config().reverse_infill);
+
+        if (this->config().reverse_overhangs) {
+            for (ExtrusionPath el: loop->paths)
+                if (el.role().is_perimeter() && el.role().is_bridge() && this->m_layer->id() % 2 == 1) {
+                    reverse = true;
+                    break;
+                }
+        }
+        return this->extrude_loop(*loop, reverse, smooth_path_cache, description, speed);
+    } else
         throw Slic3r::InvalidArgument("Invalid argument supplied to extrude()");
     return {};
 }
@@ -3195,10 +3209,11 @@ std::string GCodeGenerator::extrude_support(const ExtrusionEntityReferences &sup
             const auto   label = (role == ExtrusionRole::SupportMaterial) ? support_label : support_interface_label;
             const double speed = (role == ExtrusionRole::SupportMaterial) ? support_speed : support_interface_speed;
             const ExtrusionPath *path = dynamic_cast<const ExtrusionPath*>(&eref.extrusion_entity());
+            bool reverse = (this->m_layer->id() % 2 == 1);
             if (path)
-                gcode += this->extrude_path(*path, eref.flipped(), smooth_path_cache, label, speed);
+                gcode += this->extrude_path(*path, reverse ^ eref.flipped(), smooth_path_cache, label, speed);
             else if (const ExtrusionMultiPath *multipath = dynamic_cast<const ExtrusionMultiPath*>(&eref.extrusion_entity()); multipath)
-                gcode += this->extrude_multi_path(*multipath, eref.flipped(), smooth_path_cache, label, speed);
+                gcode += this->extrude_multi_path(*multipath, reverse ^ eref.flipped(), smooth_path_cache, label, speed);
             else {
                 const ExtrusionEntityCollection *eec = dynamic_cast<const ExtrusionEntityCollection*>(&eref.extrusion_entity());
                 assert(eec);
