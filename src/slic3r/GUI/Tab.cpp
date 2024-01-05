@@ -1689,6 +1689,7 @@ void TabPrint::build()
         optgroup->append_single_option_line("wall_transition_length");
         optgroup->append_single_option_line("wall_distribution_count");
         optgroup->append_single_option_line("min_bead_width");
+        optgroup->append_single_option_line("max_bead_width");
         optgroup->append_single_option_line("min_feature_size");
 
     page = add_options_page(L("Output options"), "output+page_white");

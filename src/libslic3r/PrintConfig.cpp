@@ -3811,6 +3811,16 @@ void PrintConfigDef::init_fff_params()
     def->min = 0;
     def->set_default_value(new ConfigOptionFloatOrPercent(85, true));
 
+    def = this->add("max_bead_width", coFloatOrPercent);
+    def->label = L("Maximum perimeter width");
+    def->category = L("Advanced");
+    def->tooltip  = L("Maximum width of the perimeter. "
+                      "If expressed as a percentage (for example 85%), it will be computed based on the nozzle diameter.");
+    def->sidetext = L("mm or %");
+    def->mode = comExpert;
+    def->min = 0;
+    def->set_default_value(new ConfigOptionFloatOrPercent(250, true));
+
     def = this->add("make_overhang_printable", coBool);
     def->label = L("Make overhang printable");
     def->category = L("Advanced");
