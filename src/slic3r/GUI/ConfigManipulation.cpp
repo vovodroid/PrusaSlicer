@@ -359,6 +359,7 @@ void ConfigManipulation::toggle_print_fff_options(DynamicPrintConfig* config)
     toggle_field("wall_distribution_count", have_arachne);
     toggle_field("min_feature_size", have_arachne);
     toggle_field("min_bead_width", have_arachne);
+    toggle_field("max_bead_width", have_arachne);
     toggle_field("thin_walls", !have_arachne);
     //Orca
     bool have_make_overhang_printable = config->opt_bool("make_overhang_printable");

@@ -573,7 +573,13 @@ void Layer::make_fills(FillAdaptive::Octree* adaptive_fill_octree, FillAdaptive:
                     for (const ThickPolyline &thick_polyline : thick_polylines) {
                         Flow new_flow = surface_fill.params.flow.with_spacing(float(f->spacing));
 
-                        ExtrusionMultiPath multi_path = PerimeterGenerator::thick_polyline_to_multi_path(thick_polyline, surface_fill.params.extrusion_role, new_flow, scaled<float>(0.05), float(SCALED_EPSILON));
+                        assert(!this->object()->print()->config().nozzle_diameter.empty());
+                        float min_nozzle_diameter = float(*std::min_element(this->object()->print()->config().nozzle_diameter.values.begin(), this->object()->print()->config().nozzle_diameter.values.end()));
+                        float max_bead_width = this->object()->config().max_bead_width.value;
+                        if (const auto &max_bead_width_opt = this->object()->config().max_bead_width; max_bead_width_opt.percent)
+						    max_bead_width = (max_bead_width_opt.value * 0.01 * min_nozzle_diameter);
+
+                        ExtrusionMultiPath multi_path = PerimeterGenerator::thick_polyline_to_multi_path(thick_polyline, surface_fill.params.extrusion_role, new_flow, scaled<float>(0.05), float(SCALED_EPSILON), max_bead_width);
                         // Append paths to collection.
                         if (!multi_path.empty()) {
                             if (multi_path.paths.front().first_point() == multi_path.paths.back().last_point())
