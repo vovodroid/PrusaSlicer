@@ -951,6 +951,8 @@ PRINT_CONFIG_CLASS_DERIVED_DEFINE(
     ((ConfigOptionBool,               ooze_prevention))
     ((ConfigOptionString,             output_filename_format))
     ((ConfigOptionFloat,              perimeter_acceleration))
+    ((ConfigOptionPercent,            perimeter_coasting))
+    ((ConfigOptionPercent,            perimeter_wipe_seam))
     ((ConfigOptionStrings,            post_process))
     ((ConfigOptionBool,               prefer_clockwise_movements))
     ((ConfigOptionString,             printer_model))

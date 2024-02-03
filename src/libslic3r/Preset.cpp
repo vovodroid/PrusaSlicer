@@ -459,6 +459,8 @@ static std::vector<std::string> s_Preset_print_options {
     "make_overhang_printable", "make_overhang_printable_angle", "make_overhang_printable_hole_size",
     "extra_perimeter_odd_even",
     "seam_position","staggered_inner_seams", "external_perimeters_first", "fill_density", "fill_pattern", "top_fill_pattern", "bottom_fill_pattern",
+    "perimeter_coasting",
+    "perimeter_wipe_seam",
     "solid_fill_pattern",
     "internal_first_on_overhangs",
     "infill_every_layers", /*"infill_only_where_needed",*/ "solid_infill_every_layers", "fill_angle", "bridge_angle",

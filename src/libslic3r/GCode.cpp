@@ -2375,7 +2375,7 @@ struct SmoothPathGenerator {
             if (enable_loop_clipping) {
                 clip_end(
                     smooth_path,
-                    scale_(nozzle_diameter) * LOOP_CLIPPING_LENGTH_OVER_NOZZLE_DIAMETER,
+                    scale_(nozzle_diameter) * config.perimeter_coasting/100.,
                     scaled<double>(GCode::ExtrusionOrder::min_gcode_segment_length)
                 );
             }
@@ -3043,10 +3043,12 @@ std::string GCodeGenerator::extrude_perimeters(
         if (!m_wipe.enabled() && perimeter.extrusion_entity->role().is_external_perimeter() && m_layer != nullptr && m_config.perimeters.value > 1) {
             // Only wipe inside if the wipe along the perimeter is disabled.
             // Make a little move inwards before leaving loop.
-            if (std::optional<Point> pt = wipe_hide_seam(perimeter.smooth_path, perimeter.reversed, scale_(EXTRUDER_CONFIG(nozzle_diameter))); pt) {
+            if (std::optional<Point> pt = wipe_hide_seam(perimeter.smooth_path, perimeter.reversed, scale_(EXTRUDER_CONFIG(nozzle_diameter) * m_config.perimeter_wipe_seam/100.)); pt) {
                 // Generate the seam hiding travel move.
-                gcode += m_writer.travel_to_xy(this->point_to_gcode(*pt), "move inwards before travel");
-                this->last_position = *pt;
+                if (m_config.perimeter_wipe_seam > 0) {
+                    gcode += m_writer.travel_to_xy(this->point_to_gcode(*pt), "move inwards before travel");
+                    this->last_position = *pt;
+                }
             }
         }
     }

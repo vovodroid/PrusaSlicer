@@ -897,6 +897,8 @@ bool PrintObject::invalidate_state_by_config_options(
                opt_key == "seam_position"
             || opt_key == "seam_preferred_direction"
             || opt_key == "seam_preferred_direction_jitter"
+            || opt_key == "perimeter_coasting"
+            || opt_key == "perimeter_wipe_seam"
             || opt_key == "support_material_speed"
             || opt_key == "support_material_interface_speed"
             || opt_key == "bridge_speed"
