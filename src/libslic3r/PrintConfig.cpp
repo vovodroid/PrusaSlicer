@@ -2748,7 +2748,21 @@ void PrintConfigDef::init_fff_params()
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionBool(false));
 
+    def = this->add("perimeter_coasting", coPercent);
+    def->label = L("Coasting");
     def->sidetext = L("%");
+    def->category = L("Layers and Perimeters");
+    def->tooltip = L("Coasting");
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionPercent(15));
+
+    def = this->add("perimeter_wipe_seam", coPercent);
+    def->label = L("Wipe seam");
+    def->sidetext = L("%");
+    def->tooltip = L("Wipe seam");
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionPercent(100));
+
 #if 0
     def = this->add("seam_preferred_direction", coFloat);
 //    def->gui_type = ConfigOptionDef::GUIType::slider;

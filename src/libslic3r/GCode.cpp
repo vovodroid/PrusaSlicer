@@ -3058,7 +3058,7 @@ std::string GCodeGenerator::extrude_loop(const ExtrusionLoop &loop_src, bool rev
     // if polyline was shorter than the clipping distance we'd get a null polyline, so
     // we discard it in that case.
     if (m_enable_loop_clipping)
-        clip_end(smooth_path, scaled<double>(EXTRUDER_CONFIG(nozzle_diameter)) * LOOP_CLIPPING_LENGTH_OVER_NOZZLE_DIAMETER, scaled<double>(min_gcode_segment_length));
+        clip_end(smooth_path, scaled<double>(EXTRUDER_CONFIG(nozzle_diameter)) * this->config().perimeter_coasting/100., scaled<double>(min_gcode_segment_length));
 
     if (smooth_path.empty())
         return {};
@@ -3083,10 +3083,12 @@ std::string GCodeGenerator::extrude_loop(const ExtrusionLoop &loop_src, bool rev
     } else if (loop_src.paths.back().role().is_external_perimeter() && m_layer != nullptr && m_config.perimeters.value > 1) {
         // Only wipe inside if the wipe along the perimeter is disabled.
         // Make a little move inwards before leaving loop.
-        if (std::optional<Point> pt = wipe_hide_seam(smooth_path, reverse_loop, scale_(EXTRUDER_CONFIG(nozzle_diameter))); pt) {
+        if (std::optional<Point> pt = wipe_hide_seam(smooth_path, reverse_loop, scale_(EXTRUDER_CONFIG(nozzle_diameter) * this->config().perimeter_wipe_seam/100.)); pt) {
             // Generate the seam hiding travel move.
-            gcode += m_writer.travel_to_xy(this->point_to_gcode(*pt), "move inwards before travel");
-            this->last_position = *pt;
+            if (this->config().perimeter_wipe_seam > 0) {
+                gcode += m_writer.travel_to_xy(this->point_to_gcode(*pt), "move inwards before travel");
+                this->last_position = *pt;
+            }
         }
     }
 
