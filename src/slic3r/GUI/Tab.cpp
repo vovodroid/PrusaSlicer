@@ -3159,6 +3159,7 @@ PageShp TabPrinter::build_kinematics_page()
 
 const std::vector<std::string> extruder_options = {
     "min_layer_height", "max_layer_height", "extruder_offset",
+    "fan_speedup_time",
     "retract_length", "retract_lift", "retract_lift_above", "retract_lift_below",
     "retract_speed", "deretract_speed", "retract_restart_extra", "retract_before_travel",
     "retract_layer_change", "wipe", "retract_before_wipe", "travel_ramping_lift",
@@ -3346,6 +3347,9 @@ void TabPrinter::build_extruder_pages(size_t n_before_extruders)
 
         optgroup = page->new_optgroup(L("Position (for multi-extruder printers)"));
         optgroup->append_single_option_line("extruder_offset", "", extruder_idx);
+
+        optgroup = page->new_optgroup(L("Fan"));
+        optgroup->append_single_option_line("fan_speedup_time", "", extruder_idx);
 
         optgroup = page->new_optgroup(L("Travel lift"));
         optgroup->append_single_option_line("retract_lift", "", extruder_idx);

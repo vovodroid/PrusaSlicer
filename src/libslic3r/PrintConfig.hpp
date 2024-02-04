@@ -801,6 +801,7 @@ PRINT_CONFIG_CLASS_DEFINE(
     ((ConfigOptionStrings,             end_filament_gcode))
     ((ConfigOptionString,              extrusion_axis))
     ((ConfigOptionFloats,              extrusion_multiplier))
+    ((ConfigOptionFloats,              fan_speedup_time))
     ((ConfigOptionFloats,              filament_diameter))
     ((ConfigOptionFloats,              filament_density))
     ((ConfigOptionStrings,             filament_type))

@@ -113,6 +113,7 @@ bool Print::invalidate_state_by_config_options(const ConfigOptionResolver & /* n
         "extrusion_multiplier",
         "fan_always_on",
         "fan_below_layer_time",
+        "fan_speedup_time",
         "full_fan_speed_layer",
         "filament_abrasive",
         "filament_colour",

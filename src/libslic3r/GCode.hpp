@@ -27,6 +27,7 @@
 #include "Geometry/ArcWelder.hpp"
 #include "libslic3r/GCode/AvoidCrossingPerimeters.hpp"
 #include "libslic3r/GCode/CoolingBuffer.hpp"
+#include "libslic3r/GCode/FanMover.hpp"
 #include "libslic3r/GCode/FindReplace.hpp"
 #include "libslic3r/GCode/GCodeWriter.hpp"
 #include "libslic3r/GCode/LabelObjects.hpp"
@@ -458,6 +459,9 @@ private:
 
     // Processor
     GCodeProcessor                      m_processor;
+
+    //some post-processing on the file, with their data class
+    std::unique_ptr<FanMover> m_fan_mover;
 
     // Back-pointer to Print (const).
     const Print*                        m_print;

@@ -161,6 +161,7 @@ set(SLIC3R_SOURCES
     GCode/CoolingBuffer.hpp
     GCode/ExtrusionProcessor.cpp
     GCode/ExtrusionProcessor.hpp
+    GCode/FanMover.cpp
     GCode/FindReplace.cpp
     GCode/FindReplace.hpp
     GCode/LabelObjects.cpp
