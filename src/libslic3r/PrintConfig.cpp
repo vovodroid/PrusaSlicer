@@ -1205,6 +1205,17 @@ void PrintConfigDef::init_fff_params()
     def->max = 1000;
     def->mode = comExpert;
     def->set_default_value(new ConfigOptionInts { 60 });
+    
+    def = this->add("fan_speedup_time", coFloats);
+    def->label = L("Fan startup delay");
+    def->tooltip = L("Move the fan start in the past by at least this delay (in seconds, you can use decimals)."
+        " It assumes infinite acceleration for this time estimation, and will only take into account G1 and G0 moves."
+        "\nIt won't move fan comands from custom gcodes (they act as a sort of 'barrier')."
+        "\nIt won't move fan comands into the start gcode if the 'only custom start gcode' is activated."
+        "\nUse 0 to deactivate.");
+    def->sidetext = L("s");
+    def->mode = comExpert;
+    def->set_default_value(new ConfigOptionFloats { 0. });
 
     def = this->add("filament_colour", coStrings);
     def->label = L("Color");
@@ -3920,6 +3931,7 @@ void PrintConfigDef::init_extruder_option_keys()
     // ConfigOptionFloats, ConfigOptionPercents, ConfigOptionBools, ConfigOptionStrings
     m_extruder_option_keys = {
         "nozzle_diameter", "min_layer_height", "max_layer_height", "extruder_offset",
+        "fan_speedup_time",
         "retract_length", "retract_lift", "retract_lift_above", "retract_lift_below", "retract_speed", "deretract_speed",
         "retract_before_wipe", "retract_restart_extra", "retract_before_travel", "wipe",
         "travel_slope", "travel_max_lift", "travel_ramping_lift", "travel_lift_before_obstacle",

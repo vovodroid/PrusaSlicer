@@ -982,6 +982,7 @@ void GCodeGenerator::_do_export(Print& print, GCodeOutputStream &file, Thumbnail
     m_last_layer_z = 0.f;
     m_max_layer_z  = 0.f;
     m_last_width = 0.f;
+    m_fan_mover.release();
 
     // How many times will be change_layer() called?gcode.cpp
     // change_layer() in turn increments the progress bar status.
@@ -1626,6 +1627,25 @@ void GCodeGenerator::process_layers(
     const auto output = tbb::make_filter<std::string, void>(slic3r_tbb_filtermode::serial_in_order,
         [&output_stream](std::string s) { output_stream.write(s); }
     );
+    const auto fan_mover = tbb::make_filter<std::string, std::string>(slic3r_tbb_filtermode::serial_in_order,
+        [&fan_mover = this->m_fan_mover, &config = this->config(), &writer = this->m_writer](std::string in)->std::string {
+        
+        int extr_id = writer.extruder()->id();
+        float fan_speedup_time = writer.config.fan_speedup_time.get_at(extr_id);
+        if (fan_speedup_time != 0 /*|| config.fan_kickstart.value > 0*/) {
+            if (fan_mover.get() == nullptr)
+                fan_mover.reset(new Slic3r::FanMover(
+                    writer,
+                    fan_speedup_time,
+                    fan_speedup_time > 0,
+                    config.use_relative_e_distances.value,
+                    false,//config.fan_speedup_overhangs_only.value,
+                    0.));//(float)config.fan_kickstart.value));
+            //flush as it's a whole layer
+            return fan_mover->process_gcode(in, true);
+        }
+        return in;
+    });
 
     tbb::filter<void, LayerResult> pipeline_to_layerresult = smooth_path_interpolator & generator;
     if (m_spiral_vase)
@@ -1633,7 +1653,7 @@ void GCodeGenerator::process_layers(
     if (m_pressure_equalizer)
         pipeline_to_layerresult = pipeline_to_layerresult & pressure_equalizer;
 
-    tbb::filter<LayerResult, std::string> pipeline_to_string = cooling;
+    tbb::filter<LayerResult, std::string> pipeline_to_string = cooling & fan_mover;
     if (m_find_replace)
         pipeline_to_string = pipeline_to_string & find_replace;
 
@@ -1719,6 +1739,26 @@ void GCodeGenerator::process_layers(
     const auto output = tbb::make_filter<std::string, void>(slic3r_tbb_filtermode::serial_in_order,
         [&output_stream](std::string s) { output_stream.write(s); }
     );
+    
+    const auto fan_mover = tbb::make_filter<std::string, std::string>(slic3r_tbb_filtermode::serial_in_order,
+        [&fan_mover = this->m_fan_mover, &config = this->config(), &writer = this->m_writer](std::string in)->std::string {
+        
+        int extr_id = writer.extruder()->id();
+        float fan_speedup_time = writer.config.fan_speedup_time.get_at(extr_id);
+        if (fan_speedup_time != 0 /*|| config.fan_kickstart.value > 0*/) {
+            if (fan_mover.get() == nullptr)
+                fan_mover.reset(new Slic3r::FanMover(
+                    writer,
+                    fan_speedup_time,
+                    fan_speedup_time > 0,
+                    config.use_relative_e_distances.value,
+                    false,//config.fan_speedup_overhangs_only.value,
+                    0.));//(float)config.fan_kickstart.value));
+            //flush as it's a whole layer
+            return fan_mover->process_gcode(in, true);
+        }
+        return in;
+    });
 
     tbb::filter<void, LayerResult> pipeline_to_layerresult = smooth_path_interpolator & generator;
     if (m_spiral_vase)
@@ -1726,7 +1766,7 @@ void GCodeGenerator::process_layers(
     if (m_pressure_equalizer)
         pipeline_to_layerresult = pipeline_to_layerresult & pressure_equalizer;
 
-    tbb::filter<LayerResult, std::string> pipeline_to_string = cooling;
+    tbb::filter<LayerResult, std::string> pipeline_to_string = cooling & fan_mover;
     if (m_find_replace)
         pipeline_to_string = pipeline_to_string & find_replace;
 

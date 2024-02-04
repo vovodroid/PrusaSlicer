@@ -339,6 +339,43 @@ std::string CoolingBuffer::process_layer(std::string &&gcode, size_t layer_id, b
         m_gcode.clear();
     }
     return out;
+/*
+    std::istringstream iss(out);
+    std::string line;
+    std::string newout;
+    int fan_current = -1;
+    int fan_last    = -1;
+    float F = 0;
+    while (std::getline(iss, line, '\n')) {
+        if (line._Starts_with("M106 S") || line=="M107") {
+            if (line == "M107") {
+                fan_last = 0;
+            } else {
+                float per = stoi(line.substr(6)) / 255.0;
+                fan_last = round(per / 0.2)*0.2*255;
+            }
+            continue;
+        }
+
+        if (line._Starts_with("G1 ")) {
+            int pos = line.find('F');
+            if (pos > 0)
+                F = stof(line.substr(pos+1));
+        };
+
+        if ((line._Starts_with("G1") || line._Starts_with("G2") || line._Starts_with("G3")) && !line._Starts_with("G1 F")) {
+            if (fan_last >= 0 && fan_last != fan_current) {
+                fan_current = fan_last;
+                newout += "M106 S" + std::to_string(fan_current)  + '\n';
+            }
+        }
+        newout += line  + '\n';
+    }
+    
+    if (fan_last != -1 && fan_last != fan_current)
+        newout += "M106 S" + std::to_string(fan_last)  + '\n';
+    return newout;
+*/    
 }
 
 // Parse the layer G-code for the moves, which could be adjusted.
