@@ -2327,7 +2327,7 @@ void PrintConfigDef::init_fff_params()
     def = this->add("overhangs_detection", coInt);
     def->label = L("Overhangs detection sensitivity");
     def->category = L("Layers and Perimeters");
-    def->tooltip = L("Set 0 to disable. Increse to detect less steep overhangs.");
+    def->tooltip = L("Set 0 to disable, increse to detect less steep overhangs. Used for perimeters reversing, not for bridge speed.");
     def->min = 0;
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionInt(2));
