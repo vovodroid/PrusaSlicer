@@ -3178,14 +3178,19 @@ void GCodeProcessor::process_G10(const GCodeReader::GCodeLine& line)
         }
     }
 
-    // stores retract move
-    store_move_vertex(EMoveType::Retract);
+    std::array<std::optional<double>, 4> g1_axes = { std::nullopt, std::nullopt, std::nullopt, std::nullopt };
+    g1_axes[E] = - this->m_parser.config().retract_length.get_at(m_extruder_id);
+    float g1_feedrate = this->m_parser.config().retract_speed.get_at(m_extruder_id) * 60;
+    process_G1(g1_axes, g1_feedrate);
 }
 
 void GCodeProcessor::process_G11(const GCodeReader::GCodeLine& line)
 {
-    // stores unretract move
-    store_move_vertex(EMoveType::Unretract);
+
+    std::array<std::optional<double>, 4> g1_axes = { std::nullopt, std::nullopt, std::nullopt, std::nullopt };
+    g1_axes[E] = this->m_parser.config().retract_length.get_at(m_extruder_id) + this->m_parser.config().retract_restart_extra.get_at(m_extruder_id);
+    float g1_feedrate = this->m_parser.config().deretract_speed.get_at(m_extruder_id) * 60;
+    process_G1(g1_axes, g1_feedrate);
 }
 
 void GCodeProcessor::process_G20(const GCodeReader::GCodeLine& line)
@@ -4384,7 +4389,10 @@ void GCodeProcessor::post_process()
                     if (!processed)
                         processed = process_used_filament(gcode_line);
                     if (!processed && !is_temporary_decoration(gcode_line)) {
-                        if (GCodeReader::GCodeLine::cmd_is(gcode_line, "G0") || GCodeReader::GCodeLine::cmd_is(gcode_line, "G1")) {
+                        if (GCodeReader::GCodeLine::cmd_is(gcode_line, "G0") || GCodeReader::GCodeLine::cmd_is(gcode_line, "G1")
+                            || GCodeReader::GCodeLine::cmd_is(gcode_line, "G10")
+                            || GCodeReader::GCodeLine::cmd_is(gcode_line, "G11")
+                            ) {
                             export_lines.append_line(gcode_line);
                             // add lines M73 where needed
                             process_line_G1(g1_lines_counter++);

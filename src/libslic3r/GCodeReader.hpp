@@ -166,6 +166,8 @@ public:
     char   extrusion_axis() const { return m_extrusion_axis; }
 //  void   set_extrusion_axis(char axis) { m_extrusion_axis = axis; }
 
+    GCodeConfig& config() { return m_config; };
+
     void set_progress_callback(ProgressCallback cb) { m_progress_callback = cb; }
 
 private:
