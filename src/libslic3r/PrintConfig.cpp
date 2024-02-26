@@ -3156,7 +3156,7 @@ void PrintConfigDef::init_fff_params()
     def->set_default_value(new ConfigOptionInt(1));
 
     def = this->add("support_material_extrusion_width", coFloatOrPercent);
-    def->label = L("Support material");
+    def->label = L("Support material/Draft shield");
     def->category = L("Extrusion Width");
     def->tooltip = L("Set this to a non-zero value to set a manual extrusion width for support material. "
                    "If left zero, default extrusion width will be used if set, otherwise nozzle diameter will be used. "
