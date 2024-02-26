@@ -617,7 +617,7 @@ public:
     std::string         validate(std::vector<std::string>* warnings = nullptr) const override;
     double              skirt_first_layer_height() const;
     Flow                brim_flow() const;
-    Flow                skirt_flow() const;
+    Flow                skirt_flow(bool first_layer = true) const;
     
     std::vector<unsigned int> object_extruders() const;
     std::vector<unsigned int> support_material_extruders() const;

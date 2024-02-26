@@ -2708,7 +2708,7 @@ LayerResult GCodeGenerator::process_layer(
             this->m_label_objects.update(nullptr);
 
             m_avoid_crossing_perimeters.use_external_mp();
-            Flow layer_skirt_flow = print.skirt_flow().with_height(float(m_skirt_done.back() - (m_skirt_done.size() == 1 ? 0. : m_skirt_done[m_skirt_done.size() - 2])));
+            Flow layer_skirt_flow = print.skirt_flow(this->layer()->id() == 0).with_height(float(m_skirt_done.back() - (m_skirt_done.size() == 1 ? 0. : m_skirt_done[m_skirt_done.size() - 2])));
             double mm3_per_mm = layer_skirt_flow.mm3_per_mm();
             for (const auto&[_, smooth_path] : (layer.id() == 0) ? extruder_extrusions.skirt : decltype(extruder_extrusions.skirt)({extruder_extrusions.skirt.back()})) {
                 // Adjust flow according to this layer's layer height.
@@ -3036,6 +3036,7 @@ std::string GCodeGenerator::extrude_skirt(
         // Override extrusion parameters.
         el.path_attributes.mm3_per_mm = extrusion_flow_override.mm3_per_mm;
         el.path_attributes.height = extrusion_flow_override.height;
+        el.path_attributes.width  = extrusion_flow_override.width;
     }
 
     gcode += this->extrude_smooth_path(smooth_path, true, "skirt"sv, m_config.support_material_speed.value);

@@ -927,9 +927,9 @@ Flow Print::brim_flow() const
 		(float)this->skirt_first_layer_height());
 }
 
-Flow Print::skirt_flow() const
+Flow Print::skirt_flow(bool first_layer) const
 {
-    ConfigOptionFloatOrPercent width = m_config.first_layer_extrusion_width;
+    ConfigOptionFloatOrPercent width = first_layer ? m_config.first_layer_extrusion_width : m_default_object_config.support_material_extrusion_width;
     if (width.value == 0) 
         width = m_print_regions.front()->config().perimeter_extrusion_width;
     if (width.value == 0)
