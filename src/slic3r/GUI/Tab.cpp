@@ -2197,6 +2197,7 @@ void TabFilament::build()
         Line line = { L("Nozzle"), "" };
         line.append_option(optgroup->get_option("first_layer_temperature"));
         line.append_option(optgroup->get_option("temperature"));
+        line.append_option(optgroup->get_option("min_temperature"));
         optgroup->append_line(line);
 
         line = { L("Bed"), "" };
