@@ -946,6 +946,7 @@ PRINT_CONFIG_CLASS_DERIVED_DEFINE(
     ((ConfigOptionFloat,              max_print_height))
     ((ConfigOptionFloats,             min_print_speed))
     ((ConfigOptionFloat,              min_skirt_length))
+    ((ConfigOptionInts,               min_temperature))
     ((ConfigOptionString,             notes))
     ((ConfigOptionFloats,             nozzle_diameter))
     ((ConfigOptionBool,               only_retract_when_crossing_perimeters))

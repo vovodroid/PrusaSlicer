@@ -958,7 +958,8 @@ void GCodeGenerator::_do_export(Print& print, GCodeOutputStream &file, Thumbnail
         // that we just created. Find and copy the entries that we want to duplicate.
         const auto& slicer_metadata = binary_data.slicer_metadata.raw_data;
         const std::vector<std::string> keys_to_duplicate = { "printer_model", "filament_type", "filament_abrasive", "nozzle_diameter", "nozzle_high_flow", "bed_temperature",
-                      "brim_width", "fill_density", "layer_height", "temperature", "ironing", "support_material", "extruder_colour"};
+                      "brim_width", "fill_density", "layer_height", "temperature", "ironing", "support_material", "extruder_colour",
+                      "min_temperature"};
         assert(std::is_sorted(slicer_metadata.begin(), slicer_metadata.end(),
                               [](const auto& a, const auto& b) { return a.first < b.first; }));
         for (const std::string& key : keys_to_duplicate) {
@@ -3486,16 +3487,47 @@ std::string GCodeGenerator::_extrude(
                         radius = 0;
                 }
             }
+            
             if (radius == 0) {
                 // Extrude line segment.
-                if (const double line_length = (p - prev).norm(); line_length > 0)
+                if (const double line_length = (p - prev).norm(); line_length > 0) {
+                    
+                    if (this->layer()->id() > 0) {
+                        double vol = path_attr.mm3_per_mm * line_length;
+                        double tm = line_length/speed;
+                        double mm3sec = vol / tm;
+                    
+                        int min_temper = config().min_temperature.get_at(m_writer.extruder()->id());
+                        int temper = config().temperature.get_at(m_writer.extruder()->id());
+                        float max_vol = config().max_volumetric_speed;
+
+                        int vol_temp = min_temper + (temper - min_temper)*mm3sec/max_vol;
+                        if (min_temper >= 190 && min_temper < temper)
+                            gcode += "M104 S" + std::to_string(vol_temp) + "\n";
+                    }
                     gcode += m_writer.extrude_to_xy(p, e_per_mm * line_length, comment);
+                }
             } else {
                 double angle = Geometry::ArcWelder::arc_angle(prev.cast<double>(), p.cast<double>(), double(radius));
                 assert(angle > 0);
                 const double line_length = angle * std::abs(radius);
                 const double dE          = e_per_mm * line_length;
                 assert(dE > 0);
+
+                if (this->layer()->id() > 0) {
+                    double vol = path_attr.mm3_per_mm * line_length;
+                    double tm = line_length/speed;
+                    double mm3sec = vol / tm;
+                    
+                    int min_temper = config().min_temperature.get_at(m_writer.extruder()->id());
+                    int temper = config().temperature.get_at(m_writer.extruder()->id());
+                    float max_vol = config().max_volumetric_speed;
+
+                    int vol_temp = min_temper + (temper - min_temper)*mm3sec/max_vol;
+                    if (min_temper >= 190 && min_temper < temper)
+                        gcode += "M104 S" + std::to_string(vol_temp) + "\n";
+                }
+
                 gcode += m_writer.extrude_to_xy_G2G3IJ(p, ij, it->ccw(), dE, comment);
             }
             prev = p;

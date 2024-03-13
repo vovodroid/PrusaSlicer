@@ -3470,6 +3470,16 @@ void PrintConfigDef::init_fff_params()
     def->max = max_temp;
     def->set_default_value(new ConfigOptionInts { 200 });
 
+    def = this->add("min_temperature", coInts);
+    def->label = L("Minimal");
+    def->tooltip = L("Minimal nozzle temperature for zero zpeed extrusion. Reducing it could help with filament overheating for large bridges, small layers, etc. "
+                     "Should 190°C or more, set this to zero to completly disable.");
+    def->sidetext = L("°C");
+    def->full_label = L("Minimal nozzle temperature");
+    def->min = 0;
+    def->max = max_temp;
+    def->set_default_value(new ConfigOptionInts { 0 });
+
     def = this->add("thick_bridges", coBool);
     def->label = L("Thick bridges");
     def->category = L("Layers and Perimeters");
