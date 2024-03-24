@@ -452,6 +452,7 @@ static std::vector<std::string> s_Preset_print_options {
     "solid_fill_pattern",
     "internal_first_on_overhangs",
     "infill_every_layers", /*"infill_only_where_needed",*/ "solid_infill_every_layers", "fill_angle", "bridge_angle",
+    "top_fill_angle", "bottom_fill_angle",
     "solid_infill_below_area", "only_retract_when_crossing_perimeters", "infill_first",
     "ironing", "ironing_type", "ironing_flowrate", "ironing_speed", "ironing_spacing",
     "max_print_speed", "max_volumetric_speed", "avoid_crossing_perimeters_max_detour",
