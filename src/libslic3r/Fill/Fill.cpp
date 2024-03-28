@@ -69,6 +69,8 @@ struct SurfaceFillParams
 //    coordf_t    	overlap = 0.;
     // Angle as provided by the region config, in radians.
     float       	angle = 0.f;
+    // Angle between layers.
+    float       	angle_shift = 0.f;
     // Is bridging used for this fill? Bridging parameters may be used even if this->flow.bridge() is not set.
     bool 			bridge;
     // Non-negative for a bridge.
@@ -202,7 +204,7 @@ std::vector<SurfaceFill> group_fills(const Layer &layer)
 		        params.bridge_angle = float(surface.bridge_angle);
 		        params.angle = float(Geometry::deg2rad(!surface.is_external() ? layerm.region().config().fill_angle.value :
 								(surface.is_top() ? layerm.region().config().top_fill_angle.value : layerm.region().config().bottom_fill_angle.value)));
-
+                params.angle_shift = float(Geometry::deg2rad(layerm.region().config().fill_angle_shift.value));
 		        // Calculate the actual flow we'll be using for this infill.
 		        params.bridge = is_bridge || Fill::use_bridge_flow(params.pattern);
 				params.flow   = params.bridge ?
@@ -507,6 +509,7 @@ void Layer::make_fills(FillAdaptive::Octree* adaptive_fill_octree, FillAdaptive:
         f->layer_id = this->id() - first_object_layer_id;
         f->z 		= this->print_z;
         f->angle 	= surface_fill.params.angle;
+		f->angle_shift = surface_fill.params.angle_shift;
         f->adapt_fill_octree   = (surface_fill.params.pattern == ipSupportCubic) ? support_fill_octree : adaptive_fill_octree;
         f->print_config        = &this->object()->print()->config();
         f->print_object_config = &this->object()->config();

@@ -704,6 +704,7 @@ PRINT_CONFIG_CLASS_DEFINE(
     ((ConfigOptionBool,                 extra_perimeters_on_overhangs))
     ((ConfigOptionEnum<ExtraPerimeter>, extra_perimeter_odd_even))
     ((ConfigOptionFloat,                fill_angle))
+    ((ConfigOptionFloat,                fill_angle_shift))
     ((ConfigOptionFloat,                top_fill_angle))
     ((ConfigOptionFloat,                bottom_fill_angle))
     ((ConfigOptionPercent,              fill_density))

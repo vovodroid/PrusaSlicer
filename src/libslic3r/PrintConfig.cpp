@@ -627,7 +627,8 @@ void PrintConfigDef::init_fff_params()
                    "automatically. Otherwise the provided angle will be used for all bridges. "
                    "Use 180° for zero angle.");
     def->sidetext = L("°");
-    def->min = 0;
+    def->min = -180;
+    def->max =  180;
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionFloat(0.));
 
@@ -1530,25 +1531,35 @@ void PrintConfigDef::init_fff_params()
     def->set_default_value(new ConfigOptionPercents { 0. });
 
     def = this->add("fill_angle", coFloat);
-    def->label = L("Fill angle");
+    def->label = L("");
     def->category = L("Infill");
     def->tooltip = L("Default base angle for infill orientation. Cross-hatching will be applied to this. "
                    "Bridges will be infilled using the best direction Slic3r can detect, so this setting "
-                   "does not affect them.");
+                   "does not affect them. Zero is X axis, positive angle is CCW direction.");
     def->sidetext = L("°");
-    def->min = 0;
-    def->max = 360;
+    def->min = -180;
+    def->max = 180;
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionFloat(45));
+    
+    def = this->add("fill_angle_shift", coFloat);
+    def->label = L("Fill angle shift");
+    def->category = L("Infill");
+    def->tooltip = L("Shift infill direction between layers.");
+    def->sidetext = L("°");
+    def->min = -90;
+    def->max = 90;
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionFloat(90));
 
     def = this->add("top_fill_angle", coFloat);
     def->label = L("Top fill angle");
     def->category = L("Infill");
     def->tooltip = L("Angle for the top fill orientation. "
-	           "It only affects the top visible layer, but not its adjacent solid shells.");
+	           "It only affects the top visible layer, but not its adjacent solid shells. Zero is X axis, positive angle is CCW direction.");
     def->sidetext = L("°");
-    def->min = 0;
-    def->max = 360;
+    def->min = -180;
+    def->max = 180;
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionFloat(45));
 
@@ -1556,10 +1567,10 @@ void PrintConfigDef::init_fff_params()
     def->label = L("Bottom fill angle");
     def->category = L("Infill");
     def->tooltip = L("Angle for the bottom fill orientation. "
-	           "It only affects the bottom external visible layer, but not its adjacent solid shells.");
+	           "It only affects the bottom external visible layer, but not its adjacent solid shells. Zero is X axis, positive angle is CCW direction.");
     def->sidetext = L("°");
-    def->min = 0;
-    def->max = 360;
+    def->min = -180;
+    def->max = 180;
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionFloat(45));
 
