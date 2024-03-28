@@ -274,7 +274,7 @@ void ConfigManipulation::toggle_print_fff_options(DynamicPrintConfig* config)
                     "top_fill_angle", "bottom_fill_angle" })
         toggle_field(el, has_solid_infill);
 
-    for (auto el : { "fill_angle", "bridge_angle", "infill_extrusion_width",
+    for (auto el : { "fill_angle", "fill_angle_shift", "bridge_angle", "infill_extrusion_width",
                     "infill_speed", "bridge_speed" })
         toggle_field(el, have_infill || has_solid_infill);
 

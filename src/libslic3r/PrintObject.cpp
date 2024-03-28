@@ -841,6 +841,7 @@ bool PrintObject::invalidate_state_by_config_options(
             || opt_key == "solid_fill_pattern"
             || opt_key == "external_fill_link_max_length"
             || opt_key == "fill_angle"
+            || opt_key == "fill_angle_shift"
             || opt_key == "top_fill_angle"
             || opt_key == "bottom_fill_angle"
             || opt_key == "infill_anchor"

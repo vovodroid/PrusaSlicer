@@ -969,7 +969,7 @@ void WipeTower::toolchange_Unload(
     float turning_point = (!m_left_to_right ? xl : xr );
     if (m_semm && (m_cooling_tube_retraction != 0 || m_cooling_tube_length != 0)) {
         float total_retraction_distance = m_cooling_tube_retraction + m_cooling_tube_length/2.f - 15.f; // the 15mm is reserved for the first part after ramming
-        writer.suppress_preview()
+        writer//.suppress_preview()
               .retract(15.f, m_filpar[m_current_tool].unloading_speed_start * 60.f) // feedrate 5000mm/min = 83mm/s
               .retract(0.70f * total_retraction_distance, 1.0f * m_filpar[m_current_tool].unloading_speed * 60.f)
               .retract(0.20f * total_retraction_distance, 0.5f * m_filpar[m_current_tool].unloading_speed * 60.f)
@@ -1006,7 +1006,7 @@ void WipeTower::toolchange_Unload(
         if (m_is_mk4mmu3)
             writer.disable_linear_advance();
 
-        writer.suppress_preview()
+        writer//.suppress_preview()
               .travel(writer.x(), writer.y() + y_step);
         old_x = writer.x();
         turning_point = xr-old_x > old_x-xl ? xr : xl;
@@ -1118,7 +1118,7 @@ void WipeTower::toolchange_Load(
         float edist = m_parking_pos_retraction+m_extra_loading_move;
 
         writer.append("; CP TOOLCHANGE LOAD\n")
-              .suppress_preview()
+              //.suppress_preview()
               .load(0.2f * edist, 60.f * m_filpar[m_current_tool].loading_speed_start)
               .load_move_x_advanced(turning_point, 0.7f * edist,        m_filpar[m_current_tool].loading_speed)  // Fast phase
               .load_move_x_advanced(oldx,          0.1f * edist, 0.1f * m_filpar[m_current_tool].loading_speed)  // Super slow*/

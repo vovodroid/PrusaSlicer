@@ -91,6 +91,7 @@ public:
     coordf_t    overlap;
     // in radians, ccw, 0 = East
     float       angle;
+    float       angle_shift;
     // In scaled coordinates. Maximum lenght of a perimeter segment connecting two infill lines.
     // Used by the FillRectilinear2, FillGrid2, FillTriangles, FillStars and FillCubic.
     // If left to zero, the links will not be limited.
@@ -138,6 +139,7 @@ protected:
         overlap(0.),
         // Initial angle is undefined.
         angle(FLT_MAX),
+        angle_shift(0),
         link_max_length(0),
         loop_clipping(0),
         // The initial bounding box is empty, therefore undefined.
@@ -159,7 +161,7 @@ protected:
                                       ExPolygon                      expolygon,
                                       ThickPolylines                &thick_polylines_out) {}
 
-    virtual float _layer_angle(size_t idx) const { return (idx & 1) ? float(M_PI/2.) : 0; }
+    virtual float _layer_angle(size_t idx) const { return (idx & 1) ? float(angle_shift) : 0; }
 
 
 public:
