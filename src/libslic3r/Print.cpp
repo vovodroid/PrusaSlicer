@@ -1003,20 +1003,6 @@ void Print::process()
         }
     }, tbb::simple_partitioner());
 
-    if (this->set_started(psWipeTower)) {
-        m_wipe_tower_data.clear();
-        m_tool_ordering.clear();
-        if (this->has_wipe_tower()) {
-            //this->set_status(95, _u8L("Generating wipe tower"));
-            this->_make_wipe_tower();
-        } else if (! this->config().complete_objects.value /*&& !this->config().parallel_objects.value*/) {
-        	// Initialize the tool ordering, so it could be used by the G-code preview slider for planning tool changes and filament switches.
-        	m_tool_ordering = ToolOrdering(*this, -1, false);
-            if (m_tool_ordering.empty() || m_tool_ordering.last_extruder() == unsigned(-1))
-                throw Slic3r::SlicingError("The print is empty. The model is not printable with current print settings.");
-        }
-        this->set_done(psWipeTower);
-    }
     if (this->set_started(psSkirtBrim)) {
         this->set_status(88, _u8L("Generating skirt and brim"));
 
@@ -1050,6 +1036,21 @@ void Print::process()
 
         this->finalize_first_layer_convex_hull();
         this->set_done(psSkirtBrim);
+    }
+
+    if (this->set_started(psWipeTower)) {
+        m_wipe_tower_data.clear();
+        m_tool_ordering.clear();
+        if (this->has_wipe_tower()) {
+            //this->set_status(95, _u8L("Generating wipe tower"));
+            this->_make_wipe_tower();
+        } else if (! this->config().complete_objects.value /*&& !this->config().parallel_objects.value*/) {
+        	// Initialize the tool ordering, so it could be used by the G-code preview slider for planning tool changes and filament switches.
+        	m_tool_ordering = ToolOrdering(*this, -1, false);
+            if (m_tool_ordering.empty() || m_tool_ordering.last_extruder() == unsigned(-1))
+                throw Slic3r::SlicingError("The print is empty. The model is not printable with current print settings.");
+        }
+        this->set_done(psWipeTower);
     }
 
     if (this->has_wipe_tower()) {
