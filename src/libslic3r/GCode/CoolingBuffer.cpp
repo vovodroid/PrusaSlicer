@@ -864,14 +864,16 @@ std::string CoolingBuffer::apply_layer_cooldown(
             float slowdown_below_layer_time = float(EXTRUDER_CONFIG(slowdown_below_layer_time));
             float fan_below_layer_time      = float(EXTRUDER_CONFIG(fan_below_layer_time));
             if (EXTRUDER_CONFIG(cooling)) {
-                if (layer_time < slowdown_below_layer_time) {
-                    // Layer time very short. Enable the fan to a full throttle.
-                    fan_speed_new = max_fan_speed;
-                    custom_fan_speed_limits.min = fan_speed_new;
-                } else if (layer_time < fan_below_layer_time) {
+                //if (layer_time < slowdown_below_layer_time) {
+                //    // Layer time very short. Enable the fan to a full throttle.
+                //    fan_speed_new = max_fan_speed;
+                //    custom_fan_speed_limits.min = fan_speed_new;
+                //} else
+                if (layer_time < fan_below_layer_time) {
                     // Layer time quite short. Enable the fan proportionally according to the current layer time.
-                    assert(layer_time >= slowdown_below_layer_time);
-                    double t = (layer_time - slowdown_below_layer_time) / (fan_below_layer_time - slowdown_below_layer_time);
+                    //assert(layer_time >= slowdown_below_layer_time);
+                    //double t = (layer_time - slowdown_below_layer_time) / (fan_below_layer_time - slowdown_below_layer_time);
+                    double t = (layer_time ) / (fan_below_layer_time);
                     fan_speed_new = int(floor(t * min_fan_speed + (1. - t) * max_fan_speed) + 0.5);
                     custom_fan_speed_limits.min = fan_speed_new;
                 }
