@@ -890,6 +890,7 @@ PRINT_CONFIG_CLASS_DERIVED_DEFINE(
     ((ConfigOptionInts,               overhang_fan_speed_1))
     ((ConfigOptionInts,               overhang_fan_speed_2))
     ((ConfigOptionInts,               overhang_fan_speed_3))
+    ((ConfigOptionInts,               external_perimeter_fan_speed))
     ((ConfigOptionInts,               chamber_temperature))
     ((ConfigOptionInts,               chamber_minimal_temperature))
     ((ConfigOptionBool,               complete_objects))

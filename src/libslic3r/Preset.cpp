@@ -508,6 +508,7 @@ static std::vector<std::string> s_Preset_filament_options {
     "bridge_fan_speed_layers",
     "start_filament_gcode", "end_filament_gcode", "enable_dynamic_fan_speeds", "chamber_temperature", "chamber_minimal_temperature",
     "overhang_fan_speed_0", "overhang_fan_speed_1", "overhang_fan_speed_2", "overhang_fan_speed_3",
+    "external_perimeter_fan_speed",
     // Retract overrides
     "filament_retract_length", "filament_retract_lift", "filament_retract_lift_above", "filament_retract_lift_below", "filament_retract_speed", "filament_deretract_speed", "filament_retract_restart_extra", "filament_retract_before_travel",
     "filament_retract_layer_change", "filament_wipe", "filament_retract_before_wipe", "filament_retract_length_toolchange", "filament_retract_restart_extra_toolchange", "filament_travel_ramping_lift",
