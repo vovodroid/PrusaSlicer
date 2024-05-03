@@ -554,6 +554,7 @@ WipeTower::WipeTower(const PrintConfig& config, const PrintRegionConfig& default
     m_travel_speed(config.travel_speed),
     m_infill_speed(default_region_config.infill_speed),
     m_perimeter_speed(default_region_config.perimeter_speed),
+    m_max_volumetric_speed(config.max_volumetric_speed),
     m_current_tool(initial_tool),
     wipe_volumes(wiping_matrix)
 {
@@ -1156,7 +1157,11 @@ void WipeTower::toolchange_Wipe(
 	float dy = (is_first_layer() ? m_extra_flow : m_extra_spacing_wipe) * m_perimeter_width; // Don't use the extra spacing for the first layer, but do use the spacing resulting from increased flow.
     // All the calculations in all other places take the spacing into account for all the layers.
 
-    const float target_speed = is_first_layer() ? m_first_layer_speed * 60.f : m_infill_speed * 60.f;
+    float target_speed = is_first_layer() ? m_first_layer_speed * 60.f : m_infill_speed * 60.f;
+    float flow = line_width * m_layer_height * target_speed/60.f;
+    float faktor = std::min(m_max_volumetric_speed/flow,1.f);
+    target_speed *= faktor;
+    
     float wipe_speed = 0.33f * target_speed;
 
     // if there is less than 2.5*line_width to the edge, advance straightaway (there is likely a blob anyway)
@@ -1409,6 +1414,10 @@ WipeTower::ToolChangeResult WipeTower::finish_layer()
     };
 
     feedrate = first_layer ? m_first_layer_speed * 60.f : m_perimeter_speed * 60.f;
+
+    float flow = m_perimeter_width * m_layer_height * feedrate/60.f;
+    float faktor = std::min(m_max_volumetric_speed/flow,1.f);
+    feedrate *= faktor;
 
     // outer contour (always)
     bool infill_cone = first_layer && m_wipe_tower_width > 2*spacing && m_wipe_tower_depth > 2*spacing;
