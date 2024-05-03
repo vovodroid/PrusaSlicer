@@ -880,13 +880,9 @@ bool PrintObject::invalidate_state_by_config_options(
             steps.emplace_back(posPerimeters);
             steps.emplace_back(posSupportMaterial);
         } else if (opt_key == "bridge_flow_ratio") {
-            if (m_config.support_material_contact_distance > 0.) {
-            	// Only invalidate due to bridging if bridging is enabled.
-            	// If later "support_material_contact_distance" is modified, the complete PrintObject is invalidated anyway.
-            	steps.emplace_back(posPerimeters);
-            	steps.emplace_back(posInfill);
-	            steps.emplace_back(posSupportMaterial);
-	        }
+            steps.emplace_back(posPerimeters);
+            steps.emplace_back(posInfill);
+            steps.emplace_back(posSupportMaterial);
         } else if (
             opt_key == "perimeter_generator"
             || opt_key == "wall_transition_length"
@@ -1035,9 +1031,7 @@ void PrintObject::detect_surfaces_type()
                 PRINT_OBJECT_TIME_LIMIT_MILLIS(PRINT_OBJECT_TIME_LIMIT_DEFAULT);
                 // If we have soluble support material, don't bridge. The overhang will be squished against a soluble layer separating
                 // the support from the print.
-                SurfaceType surface_type_bottom_other =
-                    (this->has_support() && m_config.support_material_contact_distance.value == 0) ?
-                    stBottom : stBottomBridge;
+                SurfaceType surface_type_bottom_other = stBottomBridge;
                 for (size_t idx_layer = range.begin(); idx_layer < range.end(); ++ idx_layer) {
                     m_print->throw_if_canceled();
                     // BOOST_LOG_TRIVIAL(trace) << "Detecting solid surfaces for region " << region_id << " and layer " << layer->print_z;
