@@ -3539,6 +3539,10 @@ std::string GCodeGenerator::_extrude(
             throw Slic3r::InvalidArgument("Invalid speed");
         }
     }
+
+    speed = std::min(speed, Vec2d{m_config.machine_max_feedrate_x.get_at(0), m_config.machine_max_feedrate_y.get_at(0)}.norm());
+    speed = std::min(speed, m_config.max_print_speed.value);
+
     if (m_volumetric_speed != 0. && speed == 0)
         speed = m_volumetric_speed / path_attr.mm3_per_mm;
     if (this->on_first_layer())
