@@ -1311,16 +1311,34 @@ std::vector<size_t> Plater::priv::load_files(const std::vector<fs::path>& input_
                     if (!config.empty()) {
                         const auto* post_process = config.opt<ConfigOptionStrings>("post_process");
                         if (post_process != nullptr && !post_process->values.empty()) {
-                            // TRN The placeholder is either "3MF" or "AMF"
-                            wxString msg = GUI::format_wxstr(_L("The selected %1% file contains a post-processing script.\n"
-                                "Please review the script carefully before exporting G-code."), type_3mf ? "3MF" : "AMF" );
-                            std::string text;
-                            for (const std::string& s : post_process->values)
-                                text += s;
+                            for (const std::string &scripts : post_process->values) {
+                                std::vector<std::string> lines;
+                                boost::split(lines, scripts, boost::is_any_of("\r\n"));
+                                for (std::string script : lines) {
+                                    // Ignore empty or commented post processing script lines.
+                                    boost::trim(script);
+                                    if (script.empty() || script._Starts_with("#"))
+                                        continue;
+                                    else {
+                                        goto scriptfound;
+                                    }
+                                }
+                            }
+                            goto noscript;
+                            {
+                            scriptfound:;
+                                // TRN The placeholder is either "3MF" or "AMF"
+                                wxString msg = GUI::format_wxstr(_L("The selected %1% file contains a post-processing script.\n"
+                                    "Please review the script carefully before exporting G-code."), type_3mf ? "3MF" : "AMF" );
+                                std::string text;
+                                for (const std::string& s : post_process->values)
+                                    text += s;
 
-                            InfoDialog msg_dlg(nullptr, msg, from_u8(text), true, wxOK | wxICON_WARNING);
-                            msg_dlg.set_caption(wxString(SLIC3R_APP_NAME " - ") + _L("Attention!"));
-                            msg_dlg.ShowModal();
+                                InfoDialog msg_dlg(nullptr, msg, from_u8(text), true, wxOK | wxICON_WARNING);
+                                msg_dlg.set_caption(wxString(SLIC3R_APP_NAME " - ") + _L("Attention!"));
+                                msg_dlg.ShowModal();
+                            }
+                            noscript:;
                         }
 
                         Preset::normalize(config);
