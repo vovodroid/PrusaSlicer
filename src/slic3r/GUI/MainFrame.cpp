@@ -1847,15 +1847,33 @@ void MainFrame::load_config_file()
         DynamicPrintConfig config = wxGetApp().preset_bundle->full_config();
         const auto* post_process = config.opt<ConfigOptionStrings>("post_process");
         if (post_process != nullptr && !post_process->values.empty()) {
-            const wxString msg = _L("The selected config file contains a post-processing script.\nPlease review the script carefully before exporting G-code.");
-            std::string text;
-            for (const std::string& s : post_process->values) {
-                text += s;
-            }
 
-            InfoDialog msg_dlg(nullptr, msg, from_u8(text), true, wxOK | wxICON_WARNING);
-            msg_dlg.set_caption(wxString(SLIC3R_APP_NAME " - ") + _L("Attention!"));
-            msg_dlg.ShowModal();
+            for (const std::string &scripts : post_process->values) {
+                std::vector<std::string> lines;
+                boost::split(lines, scripts, boost::is_any_of("\r\n"));
+                for (std::string script : lines) {
+                    // Ignore empty or commented post processing script lines.
+                    boost::trim(script);
+                    if (script.empty() || script._Starts_with("#"))
+                        continue;
+                    else
+                        goto scriptfound;
+                }
+            }
+            goto noscript;
+            {
+            scriptfound:;
+                const wxString msg = _L("The selected config file contains a post-processing script.\nPlease review the script carefully before exporting G-code.");
+                std::string text;
+                for (const std::string& s : post_process->values) {
+                    text += s;
+                }
+
+                InfoDialog msg_dlg(nullptr, msg, from_u8(text), true, wxOK | wxICON_WARNING);
+                msg_dlg.set_caption(wxString(SLIC3R_APP_NAME " - ") + _L("Attention!"));
+                msg_dlg.ShowModal();
+            }
+            noscript:;
         }
 
         wxGetApp().app_config->update_config_dir(get_dir_name(file));

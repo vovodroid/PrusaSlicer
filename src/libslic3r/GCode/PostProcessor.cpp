@@ -211,6 +211,21 @@ bool run_post_process_scripts(std::string &src_path, bool make_copy, const std::
         post_process->values.empty())
         return false;
 
+    for (const std::string &scripts : post_process->values) {
+        std::vector<std::string> lines;
+        boost::split(lines, scripts, boost::is_any_of("\r\n"));
+        for (std::string script : lines) {
+            // Ignore empty or commented post processing script lines.
+            boost::trim(script);
+            if (script.empty() || script._Starts_with("#"))
+                continue;
+            else
+                goto scriptfound;
+        }
+    }
+    return false;
+
+scriptfound:
     std::string path;
     if (make_copy) {
         // Don't run the post-processing script on the input file, it will be memory mapped by the G-code viewer.
@@ -272,9 +287,9 @@ bool run_post_process_scripts(std::string &src_path, bool make_copy, const std::
     		std::vector<std::string> lines;
     		boost::split(lines, scripts, boost::is_any_of("\r\n"));
             for (std::string script : lines) {
-                // Ignore empty post processing script lines.
+                // Ignore empty or commented post processing script lines.
                 boost::trim(script);
-                if (script.empty())
+                if (script.empty() || script._Starts_with("#"))
                     continue;
                 BOOST_LOG_TRIVIAL(info) << "Executing script " << script << " on file " << path;
                 std::string std_err;
