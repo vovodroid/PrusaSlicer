@@ -3366,7 +3366,10 @@ std::string GCodeGenerator::_extrude(
     if (m_volumetric_speed != 0. && speed == 0)
         speed = m_volumetric_speed / path_attr.mm3_per_mm;
     if (this->on_first_layer())
-        speed = m_config.get_abs_value("first_layer_speed", speed);
+        if (path_attr.role == ExtrusionRole::SolidInfill)
+            speed = m_config.get_abs_value("first_layer_solid_speed", speed);
+        else
+            speed = m_config.get_abs_value("first_layer_speed", speed);
     else if (this->object_layer_over_raft())
         speed = m_config.get_abs_value("first_layer_speed_over_raft", speed);
 

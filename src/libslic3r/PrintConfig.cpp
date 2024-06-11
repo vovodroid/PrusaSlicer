@@ -1692,6 +1692,17 @@ void PrintConfigDef::init_fff_params()
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionFloatOrPercent(30, false));
 
+    def = this->add("first_layer_solid_speed", coFloatOrPercent);
+    def->label = L("First layer solid infill speed");
+    def->tooltip = L("If expressed as absolute value in mm/s, this speed will be applied to all the print moves "
+                   "of the first layer, regardless of their type. If expressed as a percentage "
+                   "(for example: 40%) it will scale the default speeds.");
+    def->sidetext = L("mm/s or %");
+    def->min = 0;
+    def->max_literal = 20;
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionFloatOrPercent(30, false));
+
     def = this->add("first_layer_speed_over_raft", coFloatOrPercent);
     def->label = L("Speed of object first layer over raft interface");
     def->tooltip = L("If expressed as absolute value in mm/s, this speed will be applied to all the print moves "
