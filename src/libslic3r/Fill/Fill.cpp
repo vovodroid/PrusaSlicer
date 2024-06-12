@@ -466,7 +466,7 @@ void Layer::make_fills(FillAdaptive::Octree* adaptive_fill_octree, FillAdaptive:
     std::vector<SurfaceFill>  surface_fills       = group_fills(*this);
     const Slic3r::BoundingBox bbox                = this->object()->bounding_box();
     const auto                resolution          = this->object()->print()->config().gcode_resolution.value;
-    const auto                perimeter_generator = this->object()->config().perimeter_generator;
+    const auto                perimeter_generator = this->id() == 0 && this->object()->config().first_layer_generator_classic ? PerimeterGeneratorType::Arachne : this->object()->config().perimeter_generator;
 
 #ifdef SLIC3R_DEBUG_SLICE_PROCESSING
 	{
@@ -530,7 +530,8 @@ void Layer::make_fills(FillAdaptive::Octree* adaptive_fill_octree, FillAdaptive:
         params.anchor_length              = surface_fill.params.anchor_length;
         params.anchor_length_max          = surface_fill.params.anchor_length_max;
         params.resolution                 = resolution;
-        params.use_arachne                = (perimeter_generator == PerimeterGeneratorType::Arachne && pattern == ipConcentric) || surface_fill.params.pattern == ipEnsuring;
+        params.use_arachne                = ((perimeter_generator == PerimeterGeneratorType::Arachne && pattern == ipConcentric) || surface_fill.params.pattern == ipEnsuring)
+												&& !(layerm.layer()->id() == 0 && this->object()->config().first_layer_generator_classic);
         params.layer_height               = layerm.layer()->height;
         params.prefer_clockwise_movements = this->object()->print()->config().prefer_clockwise_movements;
 

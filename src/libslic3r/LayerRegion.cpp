@@ -119,7 +119,8 @@ void LayerRegion::make_perimeters(
         auto perimeters_begin      = uint32_t(m_perimeters.size());
         auto gap_fills_begin       = uint32_t(m_thin_fills.size());
         auto fill_expolygons_begin = uint32_t(fill_expolygons.size());
-        if (this->layer()->object()->config().perimeter_generator.value == PerimeterGeneratorType::Arachne && !spiral_vase)
+        if (this->layer()->object()->config().perimeter_generator.value == PerimeterGeneratorType::Arachne && !spiral_vase &&
+            !(this->layer()->id()==0 && this->layer()->object()->config().first_layer_generator_classic))
             PerimeterGenerator::process_arachne(
                 // input:
                 params,
