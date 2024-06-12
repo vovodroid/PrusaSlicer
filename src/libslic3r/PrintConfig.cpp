@@ -3814,6 +3814,13 @@ void PrintConfigDef::init_fff_params()
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionEnum<PerimeterGeneratorType>(PerimeterGeneratorType::Arachne));
 
+    def = this->add("first_layer_generator_classic", coBool);
+    def->label = L("Use classic for first layer");
+    def->category = L("Layers and Perimeters");
+    def->tooltip = L("Use classic perimeter for first layer.");
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionBool(false));
+
     def = this->add("wall_transition_length", coFloatOrPercent);
     def->label = L("Perimeter transition length");
     def->category = L("Advanced");

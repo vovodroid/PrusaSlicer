@@ -882,6 +882,7 @@ bool PrintObject::invalidate_state_by_config_options(
             steps.emplace_back(posSupportMaterial);
         } else if (
             opt_key == "perimeter_generator"
+            || opt_key == "first_layer_generator_classic"
             || opt_key == "wall_transition_length"
             || opt_key == "wall_transition_filter_deviation"
             || opt_key == "wall_transition_angle"

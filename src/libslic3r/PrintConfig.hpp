@@ -622,6 +622,7 @@ PRINT_CONFIG_CLASS_DEFINE(
     ((ConfigOptionFloat,               slice_closing_radius))
     ((ConfigOptionEnum<SlicingMode>,   slicing_mode))
     ((ConfigOptionEnum<PerimeterGeneratorType>, perimeter_generator))
+    ((ConfigOptionBool,                first_layer_generator_classic))
     ((ConfigOptionFloatOrPercent,      wall_transition_length))
     ((ConfigOptionFloatOrPercent,      wall_transition_filter_deviation))
     ((ConfigOptionFloat,               wall_transition_angle))
