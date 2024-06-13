@@ -3108,7 +3108,7 @@ std::string GCodeGenerator::extrude_loop(const ExtrusionLoop &loop_src, bool rev
 
     // Apply the small perimeter speed.
     if (loop_src.paths.front().role().is_perimeter() && loop_src.length() <= SMALL_PERIMETER_LENGTH && speed == -1)
-        speed = m_config.small_perimeter_speed.get_abs_value(m_config.perimeter_speed);
+        speed = std::max(m_config.min_print_speed.get_at(0), (loop_src.length() / SMALL_PERIMETER_LENGTH) * m_config.small_perimeter_speed.get_abs_value(m_config.perimeter_speed));
 
     // Extrude along the smooth path.
     std::string gcode;
