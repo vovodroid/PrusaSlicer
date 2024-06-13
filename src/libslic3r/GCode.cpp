@@ -3076,7 +3076,7 @@ std::string GCodeGenerator::extrude_perimeters(
         double speed{-1};
         // Apply the small perimeter speed.
         if (perimeter.extrusion_entity->length() <= SMALL_PERIMETER_LENGTH)
-            speed = m_config.small_perimeter_speed.get_abs_value(m_config.perimeter_speed);
+            speed = std::max(m_config.min_print_speed.get_at(0), (perimeter.extrusion_entity->length() / SMALL_PERIMETER_LENGTH) * m_config.small_perimeter_speed.get_abs_value(m_config.perimeter_speed));
         gcode += this->extrude_smooth_path(perimeter.smooth_path, true, comment_perimeter, speed);
         this->m_travel_obstacle_tracker.mark_extruded(
             perimeter.extrusion_entity, print_instance.object_layer_to_print_id, print_instance.instance_id
